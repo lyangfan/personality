@@ -162,6 +162,7 @@ class MemoryRetriever:
         return MemoryFragment(
             content=item["content"],
             timestamp=datetime.fromisoformat(metadata["timestamp"]),
+            speaker=metadata.get("speaker", "user"),  # ⭐ 添加 speaker 字段
             type=metadata["type"],
             entities=(
                 metadata.get("entities", "").split(",")

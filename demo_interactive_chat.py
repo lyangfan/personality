@@ -35,8 +35,17 @@ class InteractiveChatDemo:
         # 1. 初始化组件
         self.user_manager = UserManager()
         self.session_manager = SessionManager()
+
+        # ⭐ Embedding 模型选择
+        embedding_model = os.getenv("EMBEDDING_MODEL", "simple")
+        if embedding_model == "glm":
+            print("📊 使用智谱 AI Embedding-3（高质量语义检索）")
+        else:
+            print("📊 使用简单 Embedding（快速、免费）")
+
         self.memory_storage = MemoryStorage(
-            embedding_model="simple"  # 使用简单 embedding（无需下载模型）
+            embedding_model=embedding_model,
+            embedding_api_key=os.getenv("GLM_EMBEDDING_API_KEY")  # ⭐ 独立的 embedding key
         )
         self.glm_client = GLMClient(
             api_key=os.getenv("GLM_API_KEY", "670e7d42d2c64acf9f25696e24f67227.0SN6Hp2hsMASeNeZ"),
@@ -78,8 +87,16 @@ class InteractiveChatDemo:
         print()
         print("📌 技术栈：")
         print("  - 记忆存储：ChromaDB 向量数据库")
-        print("  - 语义检索：SentenceTransformer (中文友好)")
+        print("  - 语义检索：智谱 AI Embedding-3")
         print("  - 对话模型：GLM-4 Flash")
+        print()
+        print("💡 提示：")
+        print("  - 输入 '/stats' 查看记忆统计")
+        print("  - 输入 '/quit' 退出")
+        print()
+        print("🚀 使用智谱 Embedding-3：")
+        print("  export EMBEDDING_MODEL=glm")
+        print("  python demo_interactive_chat.py")
         print()
         print("=" * 70)
         print()

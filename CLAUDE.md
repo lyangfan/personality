@@ -8,6 +8,7 @@ DeepMemory 是一个 Python 库，用于从纯文本对话中提取结构化的�
 
 **⭐ v0.3.0 新增**: 记忆驱动对话系统（ChromaDB 向量存储 + 语义检索）
 **⭐ v0.2.0**: 陪伴型 AI 评分系统（GLM-4）
+**⭐ v0.3.1**: AI 承诺和回复记忆功能（speaker 字段 + AI 评分标准）
 
 ## 开发命令
 
@@ -28,6 +29,12 @@ pip install -r requirements.txt
 ```bash
 # ⭐ 记忆驱动对话系统（推荐）
 python demo_interactive_chat.py
+
+# ⭐ Speaker 功能测试
+python test_speaker_feature.py
+
+# ⭐ 真实场景完整测试
+python test_real_conversation_full.py
 
 # 记忆系统测试
 python test_memory_system.py
@@ -86,15 +93,29 @@ python -m src.pipeline.memory_pipeline examples/sample_conversation.txt
 
 #### 评分系统
 
-**ImportanceScorer** (`src/scorers/importance_scorer.py`): 多维度评分系统:
+**User 评分标准** (ImportanceScorer): 多维度评分系统:
 - **情感强度** (0-3 分): 情感强度 (high/medium/low/none)
 - **信息密度** (0-4 分): 实体 + 主题的数量
 - **任务相关性** (0-3 分): 目标导向内容评估
 - 总分范围: 1-10(始终为整数)
+- **过滤阈值**: 5分（低于5分的 user 记忆会被过滤）
+
+**⭐ Assistant 评分标准** (v0.3.1 新增):
+- **承诺重要性** (0-4 分): "我会一直陪着你" = 7分+, "我保证" = 高分
+- **建议价值** (0-3 分): 具体步骤、解决方案 = 5分+, 推荐尝试 = 中等分
+- **情感支持强度** (0-3 分): "理解你的感受" = 6分+, "支持你" = 高分
+- **总分范围**: 1-10(始终为整数)
+- **过滤阈值**: 3分（低于3分的 assistant 记忆会被过滤）
+
+**混合评分模式**:
+1. GLM-4 大模型给出初始评分
+2. 根据推理文本和内容关键词进行校正
+3. 特殊规则提升（身份信息→5分，AI承诺→7分，用户引用→7分）
 
 #### 数据模型
 
 **MemoryFragment** (`src/models/memory_fragment.py`): Pydantic 模型，严格验证:
+- `speaker`: Literal["user", "assistant"] (⭐ v0.3.1 新增)
 - `importance_score`: int, 1-10 (关键字段)
 - `type`: Literal["event", "preference", "fact", "relationship"]
 - `sentiment`: Literal["positive", "neutral", "negative"]
@@ -161,18 +182,27 @@ src/
 
 **ConversationManager** (`src/conversation/conversation_manager.py`): 核心编排器
 - 自动记忆提取：每 N 轮对话提取一次（可配置）
+- **⭐ v0.3.1**: 同时提取 user 和 assistant 的记忆（区分 speaker）
 - 语义检索：基于向量相似度召回相关记忆
 - 上下文管理：只注入最相关的记忆（默认 5 条）
 - 个性化生成：将记忆注入到 Prompt 生成个性化回复
+- **⭐ v0.3.1**: AI 能够记住自己的承诺、建议、情感支持
 
 **工作流程**：
 ```
-用户输入 → 缓冲消息 → 检查提取时机 → 提取记忆 → 存储到 ChromaDB
+用户输入 → 缓冲消息 → 检查提取时机 → 提取记忆（区分 user/assistant） → 存储到 ChromaDB
                                                         ↓
 语义检索 ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ← ←
     ↓
-构建带记忆的 Prompt → GLM-4 生成回复 → 返回给用户
+构建带记忆的 Prompt（区分用户和AI的话） → GLM-4 生成回复 → 返回给用户
 ```
+
+**⭐ v0.3.1 新增功能**：
+1. **Speaker 字段**：每个记忆标记为 user 或 assistant
+2. **AI 评分标准**：承诺（7分+）、建议（5分+）、情感支持（6分+）
+3. **差异化阈值**：user 5分，assistant 3分
+4. **关键词检测**：自动提升包含"我会一直"、"建议"等关键词的 AI 回复
+5. **用户引用检测**：当用户说"你之前说过..."时自动提升分数
 
 **配置选项**：
 - `memory_extract_threshold`: 记忆提取阈值（默认 3 轮）
@@ -375,10 +405,12 @@ pipeline = MemoryPipeline(
 ## 重要约束
 
 1. **importance_score 必须是整数**，范围 1-10（不是浮点数）
-2. **启发式模式假设为中文文本**（按 。分割）
-3. **LLM 客户端使用结构化输出**，要求 `{"type": "json_object"}`
-4. **片段始终按重要性降序排序**
-5. **所有时间戳使用带时区的 ISO 格式**
-6. **ChromaDB 数据持久化在 `./data/chromadb/` 目录**（可配置）
-7. **用户和会话数据以 JSON 格式存储**（分别位于 `./data/users/` 和 `./data/sessions/`）
-8. **Embedding 模型默认使用 `simple` 模式**（无需下载模型，生产环境建议升级）
+2. **speaker 字段**：必须是 "user" 或 "assistant"（v0.3.1 新增）
+3. **启发式模式假设为中文文本**（按 。分割）
+4. **LLM 客户端使用结构化输出**，要求 `{"type": "json_object"}`
+5. **片段始终按重要性降序排序**
+6. **所有时间戳使用带时区的 ISO 格式**
+7. **ChromaDB 数据持久化在 `./data/chromadb/` 目录**（可配置）
+8. **用户和会话数据以 JSON 格式存储**（分别位于 `./data/users/` 和 `./data/sessions/`）
+9. **Embedding 模型默认使用 `simple` 模式**（无需下载模型，生产环境建议升级）
+10. **评分阈值**：user 5分，assistant 3分（v0.3.1 新增，差异化过滤）

@@ -24,6 +24,9 @@ class MemoryFragment(BaseModel):
 
     content: str = Field(..., description="The core memory text")
     timestamp: datetime = Field(..., description="When this memory occurred")
+    speaker: Literal["user", "assistant"] = Field(
+        ..., description="Who said this (user or assistant)"
+    )
     type: Literal["event", "preference", "fact", "relationship"] = Field(
         ..., description="Memory category"
     )
@@ -78,6 +81,7 @@ class MemoryFragment(BaseModel):
             "example": {
                 "content": "用户最喜欢的编程语言是 Python",
                 "timestamp": "2026-01-12T10:00:00Z",
+                "speaker": "user",
                 "type": "preference",
                 "entities": ["Python"],
                 "topics": ["编程语言", "技术偏好"],

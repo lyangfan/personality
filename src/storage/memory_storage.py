@@ -26,8 +26,9 @@ class MemoryStorage:
     def __init__(
         self,
         persist_directory: str = "./data/chromadb",
-        embedding_model: str = "sentence-transformers",  # 或 "openai", "glm"
+        embedding_model: str = "simple",  # 或 "sentence-transformers", "openai", "glm"
         api_key: Optional[str] = None,
+        embedding_api_key: Optional[str] = None,  # ⭐ 独立的 embedding API key
     ):
         """
         初始化记忆存储
@@ -35,7 +36,8 @@ class MemoryStorage:
         Args:
             persist_directory: ChromaDB 持久化目录
             embedding_model: embedding 模型类型
-            api_key: API key (如果使用 OpenAI/GLM embeddings)
+            api_key: API key (已弃用，请使用 embedding_api_key)
+            embedding_api_key: 独立的 embedding API key（用于智谱 embedding-3）
         """
         self.persist_dir = Path(persist_directory)
         self.persist_dir.mkdir(parents=True, exist_ok=True)
@@ -48,7 +50,7 @@ class MemoryStorage:
 
         # 选择 embedding 函数
         self.embedding_func = self._get_embedding_function(
-            embedding_model, api_key
+            embedding_model, embedding_api_key or api_key
         )
 
         # Collection 缓存
@@ -75,6 +77,9 @@ class MemoryStorage:
             return embedding_functions.OpenAIEmbeddingFunction(
                 api_key=key, model_name="text-embedding-3-small"
             )
+        elif model_type == "glm":
+            # ⭐ 智谱 AI Embedding-3（推荐用于中文）
+            return self._create_glm_embedding_function(api_key)
         else:
             raise ValueError(f"不支持的 embedding 模型: {model_type}")
 
@@ -109,6 +114,35 @@ class MemoryStorage:
                 return self._embed_documents(input)
 
         return SimpleEmbeddingFunction()
+
+    def _create_glm_embedding_function(self, api_key: Optional[str]):
+        """创建智谱 AI embedding 函数"""
+
+        from src.utils.glm_embedding import GLMEmbedding
+        import os
+
+        # 优先使用独立的 embedding key
+        effective_key = api_key or os.getenv("GLM_EMBEDDING_API_KEY") or os.getenv("GLM_API_KEY")
+
+        class GLMEmbeddingFunction:
+            def __init__(self, api_key):
+                self.glm_embedding = GLMEmbedding(api_key=api_key, model="embedding-3")
+
+            def __call__(self, input):
+                # 兼容 ChromaDB 接口
+                return self._embed_documents(input)
+
+            def _embed_documents(self, texts):
+                return self.glm_embedding.embed_documents(texts)
+
+            def embed_documents(self, texts):
+                return self._embed_documents(texts)
+
+            def embed_query(self, input):
+                # input 是一个列表
+                return self._embed_documents(input)
+
+        return GLMEmbeddingFunction(effective_key)
 
     def _get_collection_name(self, user_id: str, session_id: str) -> str:
         """生成 collection 名称"""

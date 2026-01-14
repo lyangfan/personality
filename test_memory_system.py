@@ -29,7 +29,13 @@ def test_memory_system():
     print("\n1️⃣ 初始化组件...")
     user_manager = UserManager()
     session_manager = SessionManager()
-    memory_storage = MemoryStorage(embedding_model="simple")  # 使用简单 embedding
+
+    # ⭐ 使用智谱 embedding-3
+    import os
+    embedding_model = os.getenv("EMBEDDING_MODEL", "simple")
+    print(f"   📊 使用 Embedding 模型: {embedding_model}")
+
+    memory_storage = MemoryStorage(embedding_model=embedding_model)
     glm_client = GLMClient(
         api_key=os.getenv(
             "GLM_API_KEY", "670e7d42d2c64acf9f25696e24f67227.0SN6Hp2hsMASeNeZ"
@@ -140,9 +146,16 @@ def test_conversation_flow():
     print("=" * 70)
 
     # 初始化系统
+    import os
+
     user_manager = UserManager()
     session_manager = SessionManager()
-    memory_storage = MemoryStorage(embedding_model="simple")  # 使用简单 embedding
+
+    # ⭐ 使用智谱 embedding-3
+    embedding_model = os.getenv("EMBEDDING_MODEL", "simple")
+    print(f"   📊 使用 Embedding 模型: {embedding_model}")
+
+    memory_storage = MemoryStorage(embedding_model=embedding_model)
     glm_client = GLMClient(
         api_key=os.getenv(
             "GLM_API_KEY", "670e7d42d2c64acf9f25696e24f67227.0SN6Hp2hsMASeNeZ"
