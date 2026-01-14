@@ -1,0 +1,5 @@
+User: 我最喜欢的编程语言是 Python
+Assistant: 为什么喜欢 Python?
+User: 因为语法简洁,而且有强大的生态系统
+Assistant: 你平时用 Python 做什么?
+User: 主要用于数据分析和机器学习项目,这是我工作的重要部分

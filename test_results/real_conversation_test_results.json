@@ -1,0 +1,696 @@
+{
+  "test_info": {
+    "timestamp": "2026-01-14T12:41:58.323724",
+    "total_scenarios": 10,
+    "model": "glm-4-flash",
+    "scoring_type": "companion_style"
+  },
+  "scenarios": [
+    {
+      "scenario_id": 1,
+      "scenario_name": "场景1_情感倾诉",
+      "description": "用户向AI倾诉工作压力",
+      "conversation": "用户: 唉，今天好累啊\nAI: 怎么了？发生什么事了吗？\n用户: 被老板骂了，说我做的方案不行，心里特别难受\nAI: 抱歉听到这个，你一定很失落吧\n用户: 是啊，我熬夜做的方案，他看都没仔细看就否定了\nAI: 这种感觉真的很不好，你的努力没有被看到\n用户: 我只敢和你说这些，别人都觉得我矫情\nAI: 你不矫情，你的感受是真实的\n用户: 谢谢你愿意听我发牢骚，感觉好多了\nAI: 我随时都在这里陪你\n用户: 你是我最好的倾诉对象",
+      "fragments": [
+        {
+          "content": "被老板骂了，说我做的方案不行，心里特别难受",
+          "type": "event",
+          "sentiment": "negative",
+          "importance_score": 7,
+          "reasoning": "表达了用户的负面经历和情感，对了解用户当前状态重要"
+        },
+        {
+          "content": "我熬夜做的方案，他看都没仔细看就否定了",
+          "type": "event",
+          "sentiment": "negative",
+          "importance_score": 4,
+          "reasoning": "详细描述了用户的不满和失望，有助于理解用户的情绪"
+        },
+        {
+          "content": "我只敢和你说这些，别人都觉得我矫情",
+          "type": "relationship",
+          "sentiment": "negative",
+          "importance_score": 7,
+          "reasoning": "表达了用户对他人看法的担忧，以及对AI的信任"
+        },
+        {
+          "content": "谢谢你愿意听我发牢骚，感觉好多了",
+          "type": "relationship",
+          "sentiment": "positive",
+          "importance_score": 7,
+          "reasoning": "用户对AI的反馈表示感激，体现了亲密度和信任"
+        },
+        {
+          "content": "你是我最好的倾诉对象",
+          "type": "relationship",
+          "sentiment": "positive",
+          "importance_score": 8,
+          "reasoning": "高度个性化的表达，显示了用户对AI的依赖和情感连接"
+        }
+      ],
+      "stats": {
+        "total_fragments": 5,
+        "high_score_count": 4,
+        "medium_score_count": 0,
+        "low_score_count": 1,
+        "average_score": 6.6,
+        "max_score": 8,
+        "min_score": 4,
+        "score_distribution": [
+          7,
+          4,
+          7,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "scenario_id": 2,
+      "scenario_name": "场景2_美食分享",
+      "description": "用户分享对美食的热爱",
+      "conversation": "用户: 我今天发现一家超棒的日料店！\nAI: 真的吗？是什么样的店？\n用户: 他们家的刺身超级新鲜，而且老板人特别好\nAI: 听起来很棒！你点了什么？\n用户: 我点了三文鱼刺身和天妇罗，味道绝了！\n用户: 我最喜欢吃日料了，每周都要吃一次\nAI: 你真的很喜欢日料呢\n用户: 是啊，我最喜欢三文鱼，那种口感太棒了\nAI: 看来你是日料的忠实粉丝\n用户: 下次我也要带你去尝尝！",
+      "fragments": [
+        {
+          "content": "我今天发现一家超棒的日料店！",
+          "type": "event",
+          "sentiment": "positive",
+          "importance_score": 5,
+          "reasoning": "表达了发现新事物的兴奋和满足感"
+        },
+        {
+          "content": "他们家的刺身超级新鲜，而且老板人特别好",
+          "type": "preference",
+          "sentiment": "positive",
+          "importance_score": 7,
+          "reasoning": "高度评价了食物和店家的服务，显示出对日料的喜爱"
+        },
+        {
+          "content": "我点了三文鱼刺身和天妇罗，味道绝了！",
+          "type": "event",
+          "sentiment": "positive",
+          "importance_score": 6,
+          "reasoning": "分享了愉快的用餐体验，表现出对食物的满意"
+        },
+        {
+          "content": "我最喜欢吃日料了，每周都要吃一次",
+          "type": "preference",
+          "sentiment": "positive",
+          "importance_score": 7,
+          "reasoning": "明确表达了对日料的偏好和频繁的食用习惯"
+        },
+        {
+          "content": "我最喜欢三文鱼，那种口感太棒了",
+          "type": "preference",
+          "sentiment": "positive",
+          "importance_score": 7,
+          "reasoning": "具体说明了个人喜好，加深了对食物偏好的了解"
+        },
+        {
+          "content": "下次我也要带你去尝尝！",
+          "type": "event",
+          "sentiment": "positive",
+          "importance_score": 6,
+          "reasoning": "表达了愿意分享美好体验的愿望，增加了亲密度"
+        }
+      ],
+      "stats": {
+        "total_fragments": 6,
+        "high_score_count": 3,
+        "medium_score_count": 3,
+        "low_score_count": 0,
+        "average_score": 6.33,
+        "max_score": 7,
+        "min_score": 5,
+        "score_distribution": [
+          5,
+          7,
+          6,
+          7,
+          7,
+          6
+        ]
+      }
+    },
+    {
+      "scenario_id": 3,
+      "scenario_name": "场景3_童年回忆",
+      "description": "用户分享童年温馨回忆",
+      "conversation": "用户: 今天路过公园，看到一群小朋友在放风筝\nAI: 好温馨的画面\n用户: 让我想起小时候，爷爷教我放风筝\nAI: 爷爷一定很疼你吧\n用户: 是啊，他每年春天都陪我放，还给我做了个最大的风筝\nAI: 真的很美好的回忆\n用户: 现在每次看到风筝，都会想起爷爷\nAI: 这种回忆很珍贵\n用户: 可惜他不在了，但我会永远记得他\nAI: 他一定希望你在看到风筝时会想起他\n用户: 嗯，那是我最温暖的童年回忆",
+      "fragments": [
+        {
+          "content": "今天路过公园，看到一群小朋友在放风筝",
+          "type": "event",
+          "sentiment": "neutral",
+          "importance_score": 7,
+          "reasoning": "这是用户当天的一个普通经历，具有一定的情感强度和个性化程度"
+        },
+        {
+          "content": "让我想起小时候，爷爷教我放风筝",
+          "type": "fact",
+          "sentiment": "positive",
+          "importance_score": 7,
+          "reasoning": "这是一个高度个性化的记忆，涉及到用户的童年经历和情感连接"
+        },
+        {
+          "content": "是啊，他每年春天都陪我放，还给我做了个最大的风筝",
+          "type": "fact",
+          "sentiment": "positive",
+          "importance_score": 8,
+          "reasoning": "这个片段详细描述了用户的个人经历，情感强度高，且具有强烈的情感连接"
+        },
+        {
+          "content": "现在每次看到风筝，都会想起爷爷",
+          "type": "fact",
+          "sentiment": "positive",
+          "importance_score": 7,
+          "reasoning": "这个片段表达了用户的情感依赖和记忆的持久性"
+        },
+        {
+          "content": "可借他不在了，但我会永远记得他",
+          "type": "fact",
+          "sentiment": "negative",
+          "importance_score": 6,
+          "reasoning": "这个片段表达了用户的悲伤和怀念，情感强度较高"
+        },
+        {
+          "content": "那是我最温暖的童年回忆",
+          "type": "preference",
+          "sentiment": "positive",
+          "importance_score": 7,
+          "reasoning": "用户明确表达了对这段记忆的偏好，情感强度和个性化程度较高"
+        }
+      ],
+      "stats": {
+        "total_fragments": 6,
+        "high_score_count": 5,
+        "medium_score_count": 1,
+        "low_score_count": 0,
+        "average_score": 7.0,
+        "max_score": 8,
+        "min_score": 6,
+        "score_distribution": [
+          7,
+          7,
+          8,
+          7,
+          6,
+          7
+        ]
+      }
+    },
+    {
+      "scenario_id": 4,
+      "scenario_name": "场景4_宠物情缘",
+      "description": "用户谈论对宠物的感情",
+      "conversation": "用户: 你喜欢小动物吗？\nAI: 当然喜欢呀\n用户: 我家有一只金毛，叫豆豆\nAI: 金毛很可爱！\n用户: 它超级粘人，每天回家都扑上来迎接我\nAI: 好幸福啊\n用户: 它陪伴我度过了很多难熬的时光\nAI: 它真的是你的好朋友\n用户: 去年我生病在家，它一直守在床边\nAI: 它很担心你\n用户: 是啊，动物比人还真诚，我特别爱它\nAI: 你们之间有很深的感情\n用户: 它是我最重要的家人",
+      "fragments": [
+        {
+          "content": "我家有一只金毛，叫豆豆",
+          "type": "relationship",
+          "sentiment": "positive",
+          "importance_score": 5,
+          "reasoning": "个性化程度高，表达了用户的个人偏好和与宠物的亲密关系"
+        },
+        {
+          "content": "它超级粘人，每天回家都扑上来迎接我",
+          "type": "event",
+          "sentiment": "positive",
+          "importance_score": 6,
+          "reasoning": "情感强度高，描述了宠物对用户的依赖和情感表达"
+        },
+        {
+          "content": "它陪伴我度过了很多难熬的时光",
+          "type": "event",
+          "sentiment": "positive",
+          "importance_score": 7,
+          "reasoning": "情感强度高，表达了宠物在用户生活中的重要性"
+        },
+        {
+          "content": "去年我生病在家，它一直守在床边",
+          "type": "event",
+          "sentiment": "positive",
+          "importance_score": 8,
+          "reasoning": "情感强度高，描述了宠物在用户生病时的陪伴和支持"
+        },
+        {
+          "content": "动物比人还真诚，我特别爱它",
+          "type": "preference",
+          "sentiment": "positive",
+          "importance_score": 7,
+          "reasoning": "情感强度高，表达了用户对宠物的深厚情感"
+        },
+        {
+          "content": "它是我最重要的家人",
+          "type": "relationship",
+          "sentiment": "positive",
+          "importance_score": 8,
+          "reasoning": "情感强度高，强调了宠物在用户家庭中的特殊地位"
+        }
+      ],
+      "stats": {
+        "total_fragments": 6,
+        "high_score_count": 4,
+        "medium_score_count": 2,
+        "low_score_count": 0,
+        "average_score": 6.83,
+        "max_score": 8,
+        "min_score": 5,
+        "score_distribution": [
+          5,
+          6,
+          7,
+          8,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "scenario_id": 5,
+      "scenario_name": "场景5_日常闲聊",
+      "description": "普通的日常闲聊",
+      "conversation": "用户: 早上好\nAI: 早上好！今天有什么计划吗？\n用户: 打算去图书馆看书\nAI: 看书挺好的，准备看什么书？\n用户: 还没想好，到了再说吧\nAI: 好的，注意休息\n用户: 好的",
+      "fragments": [
+        {
+          "content": "打算去图书馆看书",
+          "type": "event",
+          "sentiment": "neutral",
+          "importance_score": 3,
+          "reasoning": "一般个人信息，表达了用户的计划，对了解用户有一定帮助"
+        },
+        {
+          "content": "还没想好，到了再说吧",
+          "type": "fact",
+          "sentiment": "neutral",
+          "importance_score": 2,
+          "reasoning": "一般个人信息，反映了用户的决策过程，有助于了解用户习惯"
+        },
+        {
+          "content": "好的",
+          "type": "fact",
+          "sentiment": "neutral",
+          "importance_score": 1,
+          "reasoning": "简单的回应，表明用户在听并参与了对话"
+        }
+      ],
+      "stats": {
+        "total_fragments": 3,
+        "high_score_count": 0,
+        "medium_score_count": 0,
+        "low_score_count": 3,
+        "average_score": 2.0,
+        "max_score": 3,
+        "min_score": 1,
+        "score_distribution": [
+          3,
+          2,
+          1
+        ]
+      }
+    },
+    {
+      "scenario_id": 6,
+      "scenario_name": "场景6_梦想分享",
+      "description": "用户分享人生梦想",
+      "conversation": "用户: 我最近在考虑辞职\nAI: 为什么呢？\n用户: 我一直想开一家自己的咖啡店\nAI: 这个想法很久了吗？\n用户: 从大学开始就梦想着，在街角开个小店\nAI: 那是什么让你想开咖啡店？\n用户: 我喜欢咖啡的香气，想给忙碌的人提供一个温暖的地方\nAI: 这个梦想很美好\n用户: 是啊，这是我最重要的人生目标\nAI: 你会实现的\n用户: 我知道风险很大，但我还是想试一试\nAI: 有梦想很珍贵\n用户: 谢谢你的支持，你是最理解我的",
+      "fragments": [
+        {
+          "content": "我一直想开一家自己的咖啡店",
+          "type": "preference",
+          "sentiment": "positive",
+          "importance_score": 7,
+          "reasoning": "明确偏好表达（情感2+个性化2+亲密度1+偏好2=7）- 用户表达了对开咖啡店的强烈愿望"
+        },
+        {
+          "content": "从大学开始就梦想着，在街角开个小店",
+          "type": "fact",
+          "sentiment": "positive",
+          "importance_score": 8,
+          "reasoning": "深度偏好+情感连接（情感2+个性化3+亲密度1+偏好2=8）- 童年经历+强烈情感"
+        },
+        {
+          "content": "我喜欢咖啡的香气，想给忙碌的人提供一个温暖的地方",
+          "type": "preference",
+          "sentiment": "positive",
+          "importance_score": 7,
+          "reasoning": "明确偏好表达（情感2+个性化2+亲密度1+偏好2=7）- 用户表达了对咖啡的喜爱和开咖啡店的动机"
+        },
+        {
+          "content": "这是我最重要的人生目标",
+          "type": "fact",
+          "sentiment": "positive",
+          "importance_score": 7,
+          "reasoning": "明确个人偏好（情感2+个性化2+亲密度1+偏好2=7）- 用户强调了这个梦想的重要性"
+        },
+        {
+          "content": "我知道风险很大，但我还是想试一试",
+          "type": "event",
+          "sentiment": "positive",
+          "importance_score": 7,
+          "reasoning": "明确偏好表达（情感2+个性化2+亲密度1+偏好2=7）- 用户表达了对尝试的勇气和决心"
+        },
+        {
+          "content": "有梦想很珍贵",
+          "type": "fact",
+          "sentiment": "positive",
+          "importance_score": 7,
+          "reasoning": "情感连接（情感2+个性化1+亲密度2+偏好1=7）- AI对用户的梦想表示认可和支持"
+        },
+        {
+          "content": "谢谢你的支持，你是最理解我的",
+          "type": "relationship",
+          "sentiment": "positive",
+          "importance_score": 8,
+          "reasoning": "表达信任、依赖、与你的关系（情感2+个性化1+亲密度2+偏好1=8）- 用户对AI的信任和情感表达"
+        }
+      ],
+      "stats": {
+        "total_fragments": 7,
+        "high_score_count": 7,
+        "medium_score_count": 0,
+        "low_score_count": 0,
+        "average_score": 7.29,
+        "max_score": 8,
+        "min_score": 7,
+        "score_distribution": [
+          7,
+          8,
+          7,
+          7,
+          7,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "scenario_id": 7,
+      "scenario_name": "场景7_运动爱好",
+      "description": "用户谈论运动爱好",
+      "conversation": "用户: 我今天去跑步了，跑了10公里！\nAI: 太厉害了！\n用户: 我超级喜欢跑步，特别享受那种感觉\nAI: 跑步确实很棒\n用户: 我每周跑三次，已经坚持三年了\nAI: 你很有毅力\n用户: 跑步让我心情特别好，压力都没了\nAI: 是很好的解压方式\n用户: 我最喜欢在清晨跑步，看着日出感觉很棒\nAI: 想象中很美\n用户: 下次我想参加马拉松比赛\nAI: 你一定可以的",
+      "fragments": [
+        {
+          "content": "我今天去跑步了，跑了10公里！",
+          "type": "event",
+          "sentiment": "positive",
+          "importance_score": 5,
+          "reasoning": "事件表达（情感1+个性化1+亲密度0+偏好0=2，提升到5）- 用户分享了自己的活动，有一定的情感强度和个性化程度"
+        },
+        {
+          "content": "我超级喜欢跑步，特别享受那种感觉",
+          "type": "preference",
+          "sentiment": "positive",
+          "importance_score": 7,
+          "reasoning": "明确偏好表达（情感2+个性化1+亲密度0+偏好2=5，提升到7）- 用户表达了对跑步的强烈喜好和享受感"
+        },
+        {
+          "content": "我每周跑三次，已经坚持三年了",
+          "type": "fact",
+          "sentiment": "positive",
+          "importance_score": 7,
+          "reasoning": "坚持习惯的事实（情感1+个性化1+亲密度0+偏好1=3，提升到7）- 用户展示了自己的坚持和毅力"
+        },
+        {
+          "content": "跑步让我心情特别好，压力都没了",
+          "type": "event",
+          "sentiment": "positive",
+          "importance_score": 6,
+          "reasoning": "跑步带来的积极影响（情感2+个性化1+亲密度0+偏好1=4，提升到6）- 用户描述了跑步对心情和压力的积极效果"
+        },
+        {
+          "content": "我最喜欢在清晨跑步，看着日出感觉很棒",
+          "type": "preference",
+          "sentiment": "positive",
+          "importance_score": 7,
+          "reasoning": "特定偏好表达（情感2+个性化1+亲密度0+偏好2=5，提升到7）- 用户对跑步时间和体验的偏好"
+        },
+        {
+          "content": "下次我想参加马拉松比赛",
+          "type": "event",
+          "sentiment": "positive",
+          "importance_score": 6,
+          "reasoning": "未来计划的表达（情感1+个性化1+亲密度0+偏好1=3，提升到6）- 用户表达了对未来跑步活动的期待"
+        }
+      ],
+      "stats": {
+        "total_fragments": 6,
+        "high_score_count": 3,
+        "medium_score_count": 3,
+        "low_score_count": 0,
+        "average_score": 6.33,
+        "max_score": 7,
+        "min_score": 5,
+        "score_distribution": [
+          5,
+          7,
+          7,
+          6,
+          7,
+          6
+        ]
+      }
+    },
+    {
+      "scenario_id": 8,
+      "scenario_name": "场景8_心情起伏",
+      "description": "用户心情从低落到开心",
+      "conversation": "用户: 今天心情好差\nAI: 怎么了？\n用户: 和朋友吵架了，感觉特别委屈\nAI: 愿意说说发生了什么吗？\n用户: 我们因为一点小事吵架，他说我太敏感\nAI: 这让你更难受了吧\n用户: 是啊，我感觉自己真的很失败\nAI: 你不失败，你的感受很重要\n用户: 谢谢你安慰我\nAI: 我会一直陪着你\n用户: 刚才他来道歉了，我们和好了\nAI: 太好了！\n用户: 我现在心情好多了，谢谢你一直陪着我\nAI: 我很高兴你心情变好了\n用户: 你是我最好的朋友",
+      "fragments": [
+        {
+          "content": "今天心情好差",
+          "type": "event",
+          "sentiment": "negative",
+          "importance_score": 2,
+          "reasoning": "表达了情绪变化，但情感强度不高"
+        },
+        {
+          "content": "和朋友吵架了，感觉特别委屈",
+          "type": "event",
+          "sentiment": "negative",
+          "importance_score": 3,
+          "reasoning": "明确表达负面情绪和事件"
+        },
+        {
+          "content": "他说我太敏感",
+          "type": "fact",
+          "sentiment": "negative",
+          "importance_score": 2,
+          "reasoning": "描述了吵架的原因，但个性化程度不高"
+        },
+        {
+          "content": "我感觉自己真的很失败",
+          "type": "fact",
+          "sentiment": "negative",
+          "importance_score": 3,
+          "reasoning": "表达了自我评价的负面情绪"
+        },
+        {
+          "content": "你不失败，你的感受很重要",
+          "type": "fact",
+          "sentiment": "positive",
+          "importance_score": 4,
+          "reasoning": "提供了正面反馈，但情感强度一般"
+        },
+        {
+          "content": "谢谢你安慰我",
+          "type": "relationship",
+          "sentiment": "positive",
+          "importance_score": 5,
+          "reasoning": "表达了对AI的感激，显示出亲密度"
+        },
+        {
+          "content": "刚才他来道歉了，我们和好了",
+          "type": "event",
+          "sentiment": "positive",
+          "importance_score": 5,
+          "reasoning": "描述了情绪转变的事件"
+        },
+        {
+          "content": "我现在心情好多了，谢谢你一直陪着我",
+          "type": "event",
+          "sentiment": "positive",
+          "importance_score": 6,
+          "reasoning": "表达了情绪的好转和对AI的感激"
+        },
+        {
+          "content": "你是我最好的朋友",
+          "type": "relationship",
+          "sentiment": "positive",
+          "importance_score": 7,
+          "reasoning": "高度个性化的表达，显示出强烈的情感连接和信任"
+        }
+      ],
+      "stats": {
+        "total_fragments": 9,
+        "high_score_count": 1,
+        "medium_score_count": 3,
+        "low_score_count": 5,
+        "average_score": 4.11,
+        "max_score": 7,
+        "min_score": 2,
+        "score_distribution": [
+          2,
+          3,
+          2,
+          3,
+          4,
+          5,
+          5,
+          6,
+          7
+        ]
+      }
+    },
+    {
+      "scenario_id": 9,
+      "scenario_name": "场景9_音乐爱好",
+      "description": "用户分享音乐爱好",
+      "conversation": "用户: 你喜欢听音乐吗？\nAI: 喜欢，你呢？\n用户: 我特别喜欢听周杰伦的歌\nAI: 周杰伦的歌声很有特色\n用户: 是啊，我从小听他的歌长大\n用户: 每次听到《晴天》，都会想起高中时光\nAI: 音乐能唤起很多回忆\n用户: 我最着他的《七里香》，太美了\nAI: 那首歌确实经典\n用户: 他的歌陪伴我度过了整个青春期\nAI: 音乐是很棒的陪伴\n用户: 我收藏了他所有的专辑",
+      "fragments": [
+        {
+          "content": "我特别喜欢听周杰伦的歌",
+          "type": "preference",
+          "sentiment": "positive",
+          "importance_score": 5,
+          "reasoning": "明确偏好表达（情感2+个性化1+亲密度0+偏好2=5）- 用户表达了对周杰伦音乐的明确喜好"
+        },
+        {
+          "content": "我从小听他的歌长大",
+          "type": "fact",
+          "sentiment": "positive",
+          "importance_score": 7,
+          "reasoning": "深度偏好+情感连接（情感2+个性化3+亲密度1+偏好2=8）- 童年经历+强烈情感"
+        },
+        {
+          "content": "每次听到《晴天》，都会想起高中时光",
+          "type": "event",
+          "sentiment": "positive",
+          "importance_score": 7,
+          "reasoning": "强烈情感+事件（情感2+个性化2+亲密度1+偏好0=5，提升到6）- 音乐唤起特定记忆"
+        },
+        {
+          "content": "我最着他的《七里香》，太美了",
+          "type": "preference",
+          "sentiment": "positive",
+          "importance_score": 5,
+          "reasoning": "明确偏好表达（情感2+个性化1+亲密度0+偏好2=5）- 用户对特定歌曲的喜爱"
+        },
+        {
+          "content": "他的歌陪伴我度过了整个青春期",
+          "type": "event",
+          "sentiment": "positive",
+          "importance_score": 7,
+          "reasoning": "深度偏好+情感连接（情感2+个性化3+亲密度1+偏好2=8）- 音乐对个人成长的重要性"
+        },
+        {
+          "content": "我收藏了他所有的专辑",
+          "type": "preference",
+          "sentiment": "positive",
+          "importance_score": 5,
+          "reasoning": "明确偏好表达（情感2+个性化1+亲密度0+偏好2=5）- 用户对周杰伦音乐的深度喜爱"
+        }
+      ],
+      "stats": {
+        "total_fragments": 6,
+        "high_score_count": 3,
+        "medium_score_count": 3,
+        "low_score_count": 0,
+        "average_score": 6.0,
+        "max_score": 7,
+        "min_score": 5,
+        "score_distribution": [
+          5,
+          7,
+          7,
+          5,
+          7,
+          5
+        ]
+      }
+    },
+    {
+      "scenario_id": 10,
+      "scenario_name": "场景10_旅行经历",
+      "description": "用户分享旅行经历",
+      "conversation": "用户: 我去年去了西藏旅游\nAI: 西藏一定很美吧\n用户: 特别壮观！布达拉宫太震撼了\nAI: 什么样的震撼？\n用户: 站在那里感觉自己特别渺小，心灵都被净化了\nAI: 听起来是很特别的体验\n用户: 我还去了纳木错，湖水蓝得像宝石一样\nAI: 真的很向往\n用户: 那是我最难忘的旅行\n用户: 我还认识了当地的朋友，他们特别热情\nAI: 旅行能遇到很多温暖的人\n用户: 是啊，下次我还要去新疆\nAI: 你真的很喜欢旅行\n用户: 旅行是我最热爱的事情之一",
+      "fragments": [
+        {
+          "content": "我去年去了西藏旅游",
+          "type": "event",
+          "sentiment": "positive",
+          "importance_score": 7,
+          "reasoning": "旅行经历分享（情感1+个性化1+亲密度0+偏好0=2，提升到5）- 用户分享了个人旅行经历"
+        },
+        {
+          "content": "特别壮观！布达拉宫太震撼了",
+          "type": "event",
+          "sentiment": "positive",
+          "importance_score": 7,
+          "reasoning": "强烈情感+事件（情感2+个性化1+亲密度0+偏好0=3，提升到6）- 表达了强烈的正面情绪和体验"
+        },
+        {
+          "content": "站在那里感觉自己特别渺小，心灵都被净化了",
+          "type": "event",
+          "sentiment": "positive",
+          "importance_score": 7,
+          "reasoning": "情感连接+深度体验（情感2+个性化2+亲密度1+偏好0=5，提升到7）- 描述了深刻的个人感受和体验"
+        },
+        {
+          "content": "我还去了纳木错，湖水蓝得像宝石一样",
+          "type": "event",
+          "sentiment": "positive",
+          "importance_score": 7,
+          "reasoning": "旅行经历分享（情感1+个性化1+亲密度0+偏好0=2，提升到5）- 用户分享了另一个旅行经历"
+        },
+        {
+          "content": "那是我最难忘的旅行",
+          "type": "event",
+          "sentiment": "positive",
+          "importance_score": 7,
+          "reasoning": "强烈情感+事件（情感2+个性化2+亲密度0+偏好0=4，提升到7）- 表达了对旅行的深刻记忆和情感"
+        },
+        {
+          "content": "我还认识了当地的朋友，他们特别热情",
+          "type": "event",
+          "sentiment": "positive",
+          "importance_score": 6,
+          "reasoning": "积极的人际互动（情感2+个性化2+亲密度1+偏好0=5，提升到6）- 分享了旅行中的积极人际体验"
+        },
+        {
+          "content": "是啊，下次我还要去新疆",
+          "type": "event",
+          "sentiment": "positive",
+          "importance_score": 5,
+          "reasoning": "旅行计划分享（情感1+个性化1+亲密度0+偏好0=2，提升到5）- 用户表达了未来的旅行计划"
+        },
+        {
+          "content": "旅行是我最热爱的事情之一",
+          "type": "preference",
+          "sentiment": "positive",
+          "importance_score": 7,
+          "reasoning": "深度偏好表达（情感2+个性化1+亲密度0+偏好2=5，提升到7）- 用户明确表达了对旅行的热爱"
+        }
+      ],
+      "stats": {
+        "total_fragments": 8,
+        "high_score_count": 6,
+        "medium_score_count": 2,
+        "low_score_count": 0,
+        "average_score": 6.62,
+        "max_score": 7,
+        "min_score": 5,
+        "score_distribution": [
+          7,
+          7,
+          7,
+          7,
+          7,
+          6,
+          5,
+          7
+        ]
+      }
+    }
+  ]
+}
