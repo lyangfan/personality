@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(tree:*)",
-      "Bash(/opt/anaconda3/bin/conda:*)"
+      "Bash(/opt/anaconda3/bin/conda:*)",
+      "Bash(git push)"
     ]
   }
 }

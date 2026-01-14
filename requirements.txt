@@ -2,3 +2,10 @@ pydantic>=2.0.0
 openai>=1.0.0
 python-dateutil>=2.8.0
 pytest>=7.0.0
+
+# 记忆存储和检索
+chromadb>=0.4.0
+sentence-transformers>=2.2.0
+
+# GLM-4 SDK
+zhipuai>=2.0.0
