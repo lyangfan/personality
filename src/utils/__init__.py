@@ -1,5 +1,5 @@
 """Utility modules."""
 
-from .llm_client import LLMClient
+from .glm_client import GLMClient
 
-__all__ = ["LLMClient"]
+__all__ = ["GLMClient"]

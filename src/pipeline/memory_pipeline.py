@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 from src.extractors import EntityExtractor, SentimentAnalyzer, TopicExtractor
 from src.models import MemoryFragment
 from src.scorers import ImportanceScorer
-from src.utils import LLMClient
+from src.utils.llm_client import LLMClient
 
 
 class MemoryPipeline:
