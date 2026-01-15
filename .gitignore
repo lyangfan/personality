@@ -49,5 +49,15 @@ glm_memories.json
 companion_demo*.json
 quick_test_results.json
 
+# API Keys (DO NOT COMMIT!)
+.env
+.env.local
+.env.*.local
+
 # Keep example test results
 !test_results/
+
+# Data directories
+data/users/
+data/sessions/
+data/chromadb/

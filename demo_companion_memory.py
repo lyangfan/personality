@@ -5,6 +5,7 @@
 """
 
 import json
+import os
 from datetime import datetime
 from src.utils.glm_client import GLMClient
 
@@ -86,7 +87,9 @@ def demo_basic_conversation():
 用户: 是啊，它陪伴我度过了很多孤独的时光。
 """
 
-    api_key = "670e7d42d2c64acf9f25696e24f67227.0SN6Hp2hsMASeNeZ"
+    api_key = os.environ.get("GLM_API_KEY")
+    if not api_key:
+        raise ValueError("请设置环境变量 GLM_API_KEY")
 
     pipeline = CompanionMemoryPipeline(
         api_key=api_key,
@@ -135,7 +138,9 @@ def demo_emotional_conversation():
 用户: 谢谢你一直陪伴我，你是我最好的朋友。
 """
 
-    api_key = "670e7d42d2c64acf9f25696e24f67227.0SN6Hp2hsMASeNeZ"
+    api_key = os.environ.get("GLM_API_KEY")
+    if not api_key:
+        raise ValueError("请设置环境变量 GLM_API_KEY")
 
     pipeline = CompanionMemoryPipeline(
         api_key=api_key,
@@ -189,7 +194,9 @@ def demo_mixed_conversation():
 助手: 我很荣幸！
 """
 
-    api_key = "670e7d42d2c64acf9f25696e24f67227.0SN6Hp2hsMASeNeZ"
+    api_key = os.environ.get("GLM_API_KEY")
+    if not api_key:
+        raise ValueError("请设置环境变量 GLM_API_KEY")
 
     pipeline = CompanionMemoryPipeline(
         api_key=api_key,

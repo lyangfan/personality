@@ -6,6 +6,7 @@
 """
 
 import json
+import os
 from datetime import datetime
 from src.utils.glm_client import GLMClient
 
@@ -195,7 +196,10 @@ AI: 你真的很喜欢旅行
 def test_all_conversations():
     """测试所有真实对话场景"""
 
-    api_key = "670e7d42d2c64acf9f25696e24f67227.0SN6Hp2hsMASeNeZ"
+    api_key = os.environ.get("GLM_API_KEY")
+    if not api_key:
+        raise ValueError("请设置环境变量 GLM_API_KEY")
+
     client = GLMClient(api_key=api_key, model="glm-4-flash")
 
     print("=" * 80)
