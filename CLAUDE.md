@@ -2,6 +2,73 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+---
+
+## ⚠️ 重要：开发环境配置
+
+### 🔑 Conda 环境要求
+
+**所有开发和测试必须在 conda `person` 环境中进行！**
+
+```bash
+# 激活 person 环境
+source /opt/anaconda3/etc/profile.d/conda.sh
+conda activate person
+
+# 验证环境
+echo $CONDA_DEFAULT_ENV  # 应该输出: person
+which python             # 应该输出: /opt/anaconda3/envs/person/bin/python
+```
+
+### 📍 关键路径
+
+- **Python 解释器**: `/opt/anaconda3/envs/person/bin/python`
+- **Streamlit 启动**: `/opt/anaconda3/envs/person/bin/python -m streamlit`
+- **环境变量**: 从 `.env` 文件加载（使用 `python-dotenv`）
+
+### 📦 已安装的关键包
+
+```bash
+# person 环境中已安装：
+openai==2.15.0              # GLM-4 SDK 需要
+streamlit==1.53.0           # Web 界面
+pandas==2.3.3               # 数据处理
+zhipuai>=2.0.0              # 智谱 AI SDK
+chromadb>=0.4.0             # 向量数据库
+pydantic>=2.0.0             # 数据验证
+```
+
+### 🚀 启动服务
+
+**FastAPI 服务：**
+```bash
+source /opt/anaconda3/etc/profile.d/conda.sh
+conda activate person
+python app.py
+```
+
+**Streamlit Web 界面：**
+```bash
+source /opt/anaconda3/etc/profile.d/conda.sh
+conda activate person
+/opt/anaconda3/envs/person/bin/python -m streamlit run streamlit_app.py
+
+# 或使用启动脚本
+./start_web.sh
+```
+
+### ⚠️ 常见错误
+
+**错误 1**: `ModuleNotFoundError: No module named 'openai'`
+- **原因**: 使用了错误的 Python 环境（base 而非 person）
+- **解决**: 确保使用 `/opt/anaconda3/envs/person/bin/python`
+
+**错误 2**: `No module named 'streamlit'`
+- **原因**: person 环境未安装 streamlit
+- **解决**: `conda activate person && pip install streamlit pandas`
+
+---
+
 ## 项目概述
 
 DeepMemory 是一个**记忆驱动的对话系统**，提供两种使用方式：
