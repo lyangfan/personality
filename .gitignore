@@ -53,6 +53,7 @@ quick_test_results.json
 .env
 .env.local
 .env.*.local
+.env.example  # 注意：.env.example 可以上传（作为模板）
 
 # Keep example test results
 !test_results/

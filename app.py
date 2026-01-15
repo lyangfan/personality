@@ -6,10 +6,15 @@ DeepMemory FastAPI 应用
 特性：
 - 异步架构：立即响应用户请求，记忆提取在后台执行
 - 依赖注入：单例模式管理核心组件
-- 生产模式：强制使用 sentence-transformers embedding
+- 生产模式：强制使用 GLM embedding-3
 - OpenAI 兼容：支持标准 chat completions 格式
 """
 import os
+from dotenv import load_dotenv
+
+# ⭐ 加载 .env 文件（必须在其他导入之前）
+load_dotenv()
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
