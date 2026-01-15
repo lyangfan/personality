@@ -7,10 +7,13 @@ DeepMemory API 测试脚本
 - POST /v1/chat/completions
 - GET /v1/memories
 - GET /health
+
+注意：需要设置 API_KEY 环境变量或在代码中配置
 """
 import requests
 import json
 import time
+import os
 from typing import Optional
 
 
@@ -18,6 +21,15 @@ from typing import Optional
 BASE_URL = "http://localhost:8000"
 USER_ID = "test_user_001"
 USERNAME = "测试用户"
+
+# API Key（从环境变量读取，或手动设置）
+API_KEY = os.getenv("API_KEY", "test-api-key-12345")
+
+# 请求头（包含 API Key）
+headers = {
+    "X-API-Key": API_KEY,
+    "Content-Type": "application/json"
+}
 
 
 def print_section(title: str):
@@ -37,7 +49,7 @@ def test_health():
     """测试健康检查"""
     print_section("1. 健康检查 (GET /health)")
 
-    response = requests.get(f"{BASE_URL}/health")
+    response = requests.get(f"{BASE_URL}/health", headers=headers)
     print_response(response)
 
     return response.status_code == 200
@@ -55,6 +67,7 @@ def test_create_user():
     response = requests.post(
         f"{BASE_URL}/v1/users",
         json=payload,
+        headers=headers
     )
     print_response(response)
 
@@ -73,7 +86,7 @@ def test_create_session():
     response = requests.post(
         f"{BASE_URL}/v1/sessions",
         json=payload,
-    )
+        headers=headers)
 
     if response.status_code == 200:
         session_id = response.json()["session_id"]
@@ -100,7 +113,7 @@ def test_chat_simple(session_id: str):
     response = requests.post(
         f"{BASE_URL}/v1/chat",
         json=payload,
-    )
+        headers=headers)
 
     if response.status_code == 200:
         print("✓ 对话成功")
@@ -131,7 +144,7 @@ def test_chat_completions(session_id: str):
     response = requests.post(
         f"{BASE_URL}/v1/chat/completions",
         json=payload,
-    )
+        headers=headers)
 
     if response.status_code == 200:
         print("✓ 对话成功")
@@ -156,7 +169,7 @@ def test_get_memories(session_id: str):
     response = requests.get(
         f"{BASE_URL}/v1/memories",
         params=params,
-    )
+        headers=headers)
 
     if response.status_code == 200:
         data = response.json()
@@ -192,6 +205,7 @@ def test_conversation_flow(session_id: str):
         response = requests.post(
             f"{BASE_URL}/v1/chat",
             json=payload,
+            headers=headers
         )
 
         if response.status_code == 200:

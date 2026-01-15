@@ -5,12 +5,14 @@ FastAPI 依赖注入系统
 1. ConversationManager、UserManager 等核心组件全局唯一
 2. 生产模式强制使用 glm 或 sentence-transformers embedding，严禁 simple
 3. 正确的生命周期管理
+4. API Key 认证保护所有接口
 """
 import os
 from typing import Optional
 from functools import lru_cache
 
-from fastapi import Depends
+from fastapi import Depends, HTTPException, status
+from fastapi.security import APIKeyHeader
 
 from src.storage.user_manager import UserManager
 from src.storage.session_manager import SessionManager
@@ -18,6 +20,12 @@ from src.storage.memory_storage import MemoryStorage
 from src.utils.glm_client import GLMClient
 from src.retrieval.memory_retriever import MemoryRetriever, RetrievalConfig
 from src.conversation.conversation_manager import ConversationManager
+
+
+# ==================== API Key 认证 ====================
+
+API_KEY_NAME = "X-API-Key"
+api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
 
 
 class AppConfig:
@@ -32,6 +40,7 @@ class AppConfig:
         memory_extract_threshold: int = 5,
         max_context_memories: int = 5,
         environment: str = "production",
+        api_key: Optional[str] = None,
     ):
         # 数据目录
         self.data_dir = data_dir
@@ -41,6 +50,15 @@ class AppConfig:
 
         # API 配置
         self.glm_api_key = glm_api_key or os.getenv("GLM_API_KEY")
+
+        # API Key 认证配置
+        self.api_key = api_key or os.getenv("API_KEY")
+        # 生产环境必须设置 API Key
+        if environment == "production" and not self.api_key:
+            raise ValueError(
+                "生产环境必须设置 API_KEY 环境变量！"
+                "请在 .env 文件中设置: API_KEY=your-secret-api-key"
+            )
 
         # Embedding 模型配置
         # 生产环境强制使用 glm 或 sentence-transformers，严禁 simple
@@ -81,7 +99,47 @@ def get_app_config() -> AppConfig:
         memory_extract_threshold=int(os.getenv("MEMORY_EXTRACT_THRESHOLD", "5")),
         max_context_memories=int(os.getenv("MAX_CONTEXT_MEMORIES", "5")),
         environment=environment,
+        api_key=os.getenv("API_KEY"),
     )
+
+
+async def verify_api_key(
+    api_key_header: str = Depends(api_key_header),
+    config: AppConfig = Depends(get_app_config),
+) -> bool:
+    """
+    验证 API Key
+
+    Args:
+        api_key_header: 从请求头 X-API-Key 中获取的 API Key
+        config: 应用配置
+
+    Returns:
+        bool: 验证成功返回 True
+
+    Raises:
+        HTTPException: 验证失败返回 401 Unauthorized
+    """
+    # 开发环境可以跳过认证（如果未设置 API_KEY）
+    if config.environment == "development" and not config.api_key:
+        return True
+
+    # 验证 API Key
+    if not api_key_header:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="API Key 缺失，请在请求头中提供 X-API-Key",
+            headers={"WWW-Authenticate": "ApiKey"},
+        )
+
+    if api_key_header != config.api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="API Key 无效",
+            headers={"WWW-Authenticate": "ApiKey"},
+        )
+
+    return True
 
 
 @lru_cache()

@@ -33,6 +33,7 @@ from src.api.dependencies import (
     get_memory_storage,
     get_app_config,
     AppConfig,
+    verify_api_key,
 )
 from src.conversation.conversation_manager import ConversationManager
 from src.storage.user_manager import UserManager
@@ -82,6 +83,7 @@ async def chat(
     conversation_manager: ConversationManager = Depends(get_conversation_manager),
     user_manager: UserManager = Depends(get_user_manager),
     session_manager: SessionManager = Depends(get_session_manager),
+    authenticated: bool = Depends(verify_api_key),
 ):
     """
     对话接口（简化版）
@@ -89,6 +91,8 @@ async def chat(
     异步架构：
     1. 立即生成 AI 回复
     2. 在后台异步提取记忆（不阻塞响应）
+
+    需要认证：在请求头中提供 X-API-Key
     """
     try:
         # 确保用户存在
@@ -150,6 +154,7 @@ async def chat_completions(
     conversation_manager: ConversationManager = Depends(get_conversation_manager),
     user_manager: UserManager = Depends(get_user_manager),
     session_manager: SessionManager = Depends(get_session_manager),
+    authenticated: bool = Depends(verify_api_key),
 ):
     """
     兼容 OpenAI 的对话接口
@@ -252,11 +257,14 @@ async def get_memories(
     speaker: Optional[str] = None,
     memory_storage: MemoryStorage = Depends(get_memory_storage),
     session_manager: SessionManager = Depends(get_session_manager),
+    authenticated: bool = Depends(verify_api_key),
 ):
     """
     获取用户记忆（用于调试）
 
     支持按会话、重要性、说话人过滤
+
+    需要认证：在请求头中提供 X-API-Key
     """
     try:
         # 验证用户和会话
@@ -321,8 +329,12 @@ async def get_memories(
 async def create_user(
     request: UserCreateRequest,
     user_manager: UserManager = Depends(get_user_manager),
+    authenticated: bool = Depends(verify_api_key),
 ):
-    """创建新用户"""
+    """创建新用户
+
+    需要认证：在请求头中提供 X-API-Key
+    """
     try:
         user = user_manager.create_user(
             username=request.username,
@@ -340,8 +352,12 @@ async def create_user(
 async def get_user(
     user_id: str,
     user_manager: UserManager = Depends(get_user_manager),
+    authenticated: bool = Depends(verify_api_key),
 ):
-    """获取用户信息"""
+    """获取用户信息
+
+    需要认证：在请求头中提供 X-API-Key
+    """
     user = user_manager.get_user(user_id)
     if not user:
         raise HTTPException(
@@ -358,8 +374,12 @@ async def create_session(
     request: SessionCreateRequest,
     user_manager: UserManager = Depends(get_user_manager),
     session_manager: SessionManager = Depends(get_session_manager),
+    authenticated: bool = Depends(verify_api_key),
 ):
-    """创建新会话"""
+    """创建新会话
+
+    需要认证：在请求头中提供 X-API-Key
+    """
     try:
         # 验证用户存在
         user = user_manager.get_user(request.user_id)
@@ -388,8 +408,12 @@ async def create_session(
 async def get_session(
     session_id: str,
     session_manager: SessionManager = Depends(get_session_manager),
+    authenticated: bool = Depends(verify_api_key),
 ):
-    """获取会话信息"""
+    """获取会话信息
+
+    需要认证：在请求头中提供 X-API-Key
+    """
     session = session_manager.get_session(session_id)
     if not session:
         raise HTTPException(
@@ -404,8 +428,12 @@ async def list_user_sessions(
     user_id: str,
     user_manager: UserManager = Depends(get_user_manager),
     session_manager: SessionManager = Depends(get_session_manager),
+    authenticated: bool = Depends(verify_api_key),
 ):
-    """获取用户的所有会话"""
+    """获取用户的所有会话
+
+    需要认证：在请求头中提供 X-API-Key
+    """
     # 验证用户存在
     user = user_manager.get_user(user_id)
     if not user:
