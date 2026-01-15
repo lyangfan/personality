@@ -92,10 +92,16 @@ DeepMemory 是一个**记忆驱动的对话系统**，提供两种使用方式�
 - 💬 **记忆驱动对话**: 基于历史记忆生成个性化回复
 - 🔄 **双向记忆**: 同时记住用户的话和 AI 的承诺
 - 📊 **智能评分**: 自动评估信息重要性（1-10分）
+- 🎭 **多角色系统**: 6种不同性格的AI角色，记忆完全隔离
 - 🚀 **REST API**: 标准的 HTTP 接口，易于集成
 
 ### 版本历史
 
+- **v0.5.0**: 多角色系统 ⭐ **NEW**
+  - 6种 MBTI 角色可选（INTJ, ISFJ, ENTP, INFP, ESTJ, ENTJ）
+  - 角色间记忆完全隔离
+  - 自定义对话原则和语言风格
+  - 角色切换确认和详情展示
 - **v0.4.0**: FastAPI REST API 服务（异步架构）
 - **v0.3.1**: AI 承诺和回复记忆功能（speaker 字段 + AI 评分标准）
 - **v0.3.0**: 记忆驱动对话系统（ChromaDB 向量存储 + 语义检索）
@@ -365,6 +371,61 @@ response = conversation_manager.chat(
 - `simple`: 简单字符编码（默认，无需下载）
 - `sentence-transformers`: 多语言模型（需网络访问 HuggingFace）
 - `openai`: OpenAI embeddings（需要 API key）
+
+### 🎭 多角色系统 (v0.5.0 新增) ⭐ **核心特性**
+
+**RoleManager** (`src/role/role_manager.py`): 角色配置管理器
+- 从 JSON 文件自动加载角色配置
+- 支持动态角色切换
+- 角色间记忆完全隔离
+
+**PersonalityProfile** (`src/models/personality.py`): 角色配置模型
+- `role_id`: 角色唯一标识符
+- `core_identity`: 角色核心身份和驱动力
+- `dialogue_principles`: 对话原则列表（指导AI如何交互）
+- `vocabulary`: 禁用词和高频词配置
+- `constraints`: 绝对禁忌（AI必须避免的行为）
+- `emotional_tone`: 情感基调 (cold/neutral/warm/enthusiastic)
+- `response_style`: 回复风格 (compact/conversational/analytical/creative/direct)
+
+**角色列表**：
+1. **Prometheus** (INTJ) - 理性至上的反熵增引擎
+2. **小暖** (ISFJ) - 温暖贴心的陪伴者
+3. **Debate Master** (ENTP) - 思维敏捷的辩论家
+4. **Soul Healer** (INFP) - 理想主义的治愈者
+5. **Executive** (ESTJ) - 务实高效的总经理
+6. **Commander** (ENTJ) - 天然领导者、战略思维
+
+**记忆隔离机制**：
+- 每个角色拥有独立的 ChromaDB collection
+- Collection 命名格式：`{user_id}_{session_id}_{role_id}_memories`
+- 切换角色时，记忆不会混淆
+- 可单独清空某个角色的记忆
+
+**配置文件位置**：`config/roles/*.json`
+
+**使用示例**：
+```python
+from src.role import get_role_manager
+from src.models.personality import PersonalityProfile
+
+# 初始化角色管理器
+role_manager = get_role_manager(config_dir="config/roles", default_role_id="companion_warm")
+
+# 获取角色
+role = role_manager.get_role("intj_prometheus")
+
+# 构建系统提示词
+system_prompt = role.build_system_prompt()
+
+# 对话时使用角色
+response = conversation_manager.chat(
+    user_id=user.user_id,
+    session_id=session.session_id,
+    user_message="你好",
+    role_id="intj_prometheus"  # 指定角色
+)
+```
 
 ### ⭐ GLM-4 陪伴型评分 (v0.2.0)
 

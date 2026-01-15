@@ -62,3 +62,12 @@ quick_test_results.json
 data/users/
 data/sessions/
 data/chromadb/
+
+# Temporary files
+*.tmp
+*.bak
+*_old.*
+*_backup.*
+
+# Test outputs
+test_results/output/

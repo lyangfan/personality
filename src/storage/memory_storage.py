@@ -144,15 +144,37 @@ class MemoryStorage:
 
         return GLMEmbeddingFunction(effective_key)
 
-    def _get_collection_name(self, user_id: str, session_id: str) -> str:
-        """生成 collection 名称"""
+    def _get_collection_name(self, user_id: str, session_id: str, role_id: Optional[str] = None) -> str:
+        """
+        生成 collection 名称
+
+        Args:
+            user_id: 用户ID
+            session_id: 会话ID
+            role_id: 角色ID（可选，如果提供则实现角色间记忆隔离）
+
+        Returns:
+            collection 名称
+        """
+        if role_id:
+            return f"{user_id}_{session_id}_{role_id}_memories"
         return f"{user_id}_{session_id}_memories"
 
     def _get_or_create_collection(
-        self, user_id: str, session_id: str
+        self, user_id: str, session_id: str, role_id: Optional[str] = None
     ) -> chromadb.Collection:
-        """获取或创建 collection"""
-        collection_name = self._get_collection_name(user_id, session_id)
+        """
+        获取或创建 collection
+
+        Args:
+            user_id: 用户ID
+            session_id: 会话ID
+            role_id: 角色ID（可选，如果提供则实现角色间记忆隔离）
+
+        Returns:
+            ChromaDB collection
+        """
+        collection_name = self._get_collection_name(user_id, session_id, role_id)
 
         if collection_name not in self._collections_cache:
             # 检查 collection 是否已存在
@@ -162,10 +184,14 @@ class MemoryStorage:
                 )
             except Exception:
                 # 不存在则创建
+                metadata = {"user_id": user_id, "session_id": session_id}
+                if role_id:
+                    metadata["role_id"] = role_id
+
                 collection = self.client.create_collection(
                     name=collection_name,
                     embedding_function=self.embedding_func,
-                    metadata={"user_id": user_id, "session_id": session_id},
+                    metadata=metadata,
                 )
 
             self._collections_cache[collection_name] = collection
@@ -173,7 +199,7 @@ class MemoryStorage:
         return self._collections_cache[collection_name]
 
     def store_memory(
-        self, user_id: str, session_id: str, fragment: MemoryFragment
+        self, user_id: str, session_id: str, fragment: MemoryFragment, role_id: Optional[str] = None
     ) -> str:
         """
         存储单个记忆片段
@@ -182,11 +208,12 @@ class MemoryStorage:
             user_id: 用户ID
             session_id: 会话ID
             fragment: 记忆片段
+            role_id: 角色ID（可选，如果提供则实现角色间记忆隔离）
 
         Returns:
             记忆ID
         """
-        collection = self._get_or_create_collection(user_id, session_id)
+        collection = self._get_or_create_collection(user_id, session_id, role_id)
 
         # 生成记忆ID
         memory_id = str(uuid.uuid4())
@@ -202,6 +229,8 @@ class MemoryStorage:
             "entities": ",".join(fragment.entities),
             "topics": ",".join(fragment.topics),
         }
+        if role_id:
+            metadata["role_id"] = role_id
 
         # 存入 ChromaDB
         collection.add(
@@ -211,10 +240,21 @@ class MemoryStorage:
         return memory_id
 
     def store_memories(
-        self, user_id: str, session_id: str, fragments: List[MemoryFragment]
+        self, user_id: str, session_id: str, fragments: List[MemoryFragment], role_id: Optional[str] = None
     ) -> List[str]:
-        """批量存储记忆片段"""
-        collection = self._get_or_create_collection(user_id, session_id)
+        """
+        批量存储记忆片段
+
+        Args:
+            user_id: 用户ID
+            session_id: 会话ID
+            fragments: 记忆片段列表
+            role_id: 角色ID（可选，如果提供则实现角色间记忆隔离）
+
+        Returns:
+            记忆ID列表
+        """
+        collection = self._get_or_create_collection(user_id, session_id, role_id)
 
         memory_ids = [str(uuid.uuid4()) for _ in fragments]
 
@@ -229,6 +269,7 @@ class MemoryStorage:
                 "confidence": f.confidence,
                 "entities": ",".join(f.entities),
                 "topics": ",".join(f.topics),
+                "role_id": role_id,
             }
             for f in fragments
         ]
@@ -237,9 +278,19 @@ class MemoryStorage:
 
         return memory_ids
 
-    def get_memory_count(self, user_id: str, session_id: str) -> int:
-        """获取记忆数量"""
-        collection = self._get_or_create_collection(user_id, session_id)
+    def get_memory_count(self, user_id: str, session_id: str, role_id: Optional[str] = None) -> int:
+        """
+        获取记忆数量
+
+        Args:
+            user_id: 用户ID
+            session_id: 会话ID
+            role_id: 角色ID（可选，如果提供则实现角色间记忆隔离）
+
+        Returns:
+            记忆数量
+        """
+        collection = self._get_or_create_collection(user_id, session_id, role_id)
         return collection.count()
 
     def query_memories(
@@ -248,6 +299,7 @@ class MemoryStorage:
         session_id: str,
         n_results: int = 10,
         where: Optional[Dict] = None,
+        role_id: Optional[str] = None,
     ) -> List[Dict]:
         """
         查询记忆片段
@@ -257,11 +309,12 @@ class MemoryStorage:
             session_id: 会话ID
             n_results: 返回结果数量
             where: 过滤条件（ChromaDB where 子句）
+            role_id: 角色ID（可选，如果提供则实现角色间记忆隔离）
 
         Returns:
             记忆片段列表（包含所有元数据）
         """
-        collection = self._get_or_create_collection(user_id, session_id)
+        collection = self._get_or_create_collection(user_id, session_id, role_id)
 
         # 获取所有记忆（不使用向量查询）
         results = collection.get(
@@ -291,9 +344,16 @@ class MemoryStorage:
 
         return memories
 
-    def delete_collection(self, user_id: str, session_id: str):
-        """删除会话的所有记忆"""
-        collection_name = self._get_collection_name(user_id, session_id)
+    def delete_collection(self, user_id: str, session_id: str, role_id: Optional[str] = None):
+        """
+        删除会话的所有记忆
+
+        Args:
+            user_id: 用户ID
+            session_id: 会话ID
+            role_id: 角色ID（可选，如果提供则只删除该角色的记忆）
+        """
+        collection_name = self._get_collection_name(user_id, session_id, role_id)
         try:
             self.client.delete_collection(name=collection_name)
             if collection_name in self._collections_cache:

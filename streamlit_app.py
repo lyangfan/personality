@@ -14,7 +14,7 @@ import os
 import sys
 from pathlib import Path
 from datetime import datetime
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 # 添加项目根目录到路径
 sys.path.insert(0, str(Path(__file__).parent))
@@ -24,6 +24,7 @@ import pandas as pd
 
 from src.conversation.conversation_manager import ConversationManager
 from src.retrieval.memory_retriever import RetrievalConfig
+from src.role import RoleManager, get_role_manager
 from src.storage.memory_storage import MemoryStorage
 from src.storage.session_manager import SessionManager
 from src.storage.user_manager import UserManager
@@ -61,6 +62,12 @@ def initialize_system():
         model="glm-4-flash",
     )
 
+    # ⭐ 初始化角色管理器
+    role_manager = get_role_manager(
+        config_dir="config/roles",
+        default_role_id="companion_warm"
+    )
+
     # 配置检索策略
     retrieval_config = RetrievalConfig(
         top_k=5,
@@ -69,12 +76,13 @@ def initialize_system():
         boost_importance=True
     )
 
-    # 创建对话管理器
+    # 创建对话管理器（传入 role_manager）
     conversation_manager = ConversationManager(
         user_manager=user_manager,
         session_manager=session_manager,
         memory_storage=memory_storage,
         glm_client=glm_client,
+        role_manager=role_manager,
         retrieval_config=retrieval_config,
         memory_extract_threshold=3,  # 每3轮提取一次记忆
         max_context_memories=5,
@@ -85,6 +93,7 @@ def initialize_system():
         "user_manager": user_manager,
         "session_manager": session_manager,
         "memory_storage": memory_storage,
+        "role_manager": role_manager,
     }
 
 
@@ -96,13 +105,14 @@ def get_user_sessions(user_id: str) -> List:
     return components["session_manager"].list_user_sessions(user_id)
 
 
-def get_session_memories(user_id: str, session_id: str, limit: int = 20) -> List[Dict]:
+def get_session_memories(user_id: str, session_id: str, limit: int = 20, role_id: Optional[str] = None) -> List[Dict]:
     """获取会话记忆"""
     components = st.session_state.components
     results = components["memory_storage"].query_memories(
         user_id=user_id,
         session_id=session_id,
         n_results=limit,
+        role_id=role_id,  # ⭐ 传递 role_id 以正确检索角色的记忆
     )
     return results
 
@@ -125,6 +135,88 @@ def render_sidebar():
     """渲染侧边栏"""
     st.sidebar.title("🧠 DeepMemory")
     st.sidebar.markdown("---")
+
+    # ⭐ 角色选择（全局，在用户登录前也可选择）
+    components = st.session_state.components
+    role_manager = components["role_manager"]
+
+    st.sidebar.subheader("🎭 角色选择")
+    available_roles = role_manager.list_roles()
+
+    # 创建角色选择字典
+    role_options = {role["name"]: role["id"] for role in available_roles}
+
+    # 显示当前角色
+    current_role_id = st.session_state.get("current_role_id", "companion_warm")
+    current_role_name = next((r["name"] for r in available_roles if r["id"] == current_role_id), "小暖")
+
+    selected_role_name = st.sidebar.selectbox(
+        "选择角色",
+        options=list(role_options.keys()),
+        index=list(role_options.keys()).index(current_role_name) if current_role_name in role_options else 0,
+        key="role_selector"
+    )
+
+    selected_role_id = role_options[selected_role_name]
+
+    # 角色切换确认
+    if st.session_state.get("current_role_id") != selected_role_id:
+        # 检测到角色切换
+        if "role_change_confirmed" not in st.session_state:
+            st.session_state.role_change_confirmed = False
+
+        if not st.session_state.role_change_confirmed:
+            st.sidebar.warning(f"⚠️ 切换到「{selected_role_name}」将创建独立的记忆空间")
+            if st.sidebar.button("确认切换", key="confirm_role_change"):
+                st.session_state.role_change_confirmed = True
+                st.session_state.current_role_id = selected_role_id
+                st.session_state.current_role = role_manager.get_role(selected_role_id)
+                st.sidebar.success(f"✅ 已切换到 {selected_role_name}")
+                st.rerun()
+        else:
+            st.session_state.current_role_id = selected_role_id
+            st.session_state.current_role = role_manager.get_role(selected_role_id)
+            st.session_state.role_change_confirmed = False
+            st.rerun()
+
+    # 显示当前角色详情
+    current_role = role_manager.get_role(st.session_state.get("current_role_id", "companion_warm"))
+    if current_role:
+        st.sidebar.markdown("---")
+        st.sidebar.markdown("### 📋 角色详情")
+
+        # 角色基本信息
+        role_emoji = "🧊" if current_role.emotional_tone.value == "cold" else "🌞"
+        tone_text = {
+            "cold": "冷酷理性",
+            "warm": "温暖陪伴",
+            "neutral": "中立客观",
+            "enthusiastic": "热情活力"
+        }.get(current_role.emotional_tone.value, "未知")
+
+        st.sidebar.caption(f"{role_emoji} **{current_role.name}** ({tone_text})")
+
+        # 展开/收起角色描述
+        with st.sidebar.expander("查看完整描述"):
+            st.sidebar.write(current_role.description)
+
+        # 显示对话原则
+        if current_role.dialogue_principles:
+            with st.sidebar.expander("对话原则"):
+                for i, principle in enumerate(current_role.dialogue_principles, 1):
+                    st.sidebar.write(f"{i}. {principle}")
+
+        # 显示语言风格
+        if current_role.vocabulary.get("forbidden") or current_role.vocabulary.get("high_frequency"):
+            with st.sidebar.expander("语言风格"):
+                if current_role.vocabulary.get("forbidden"):
+                    st.sidebar.write("**禁用词**:")
+                    st.sidebar.write(", ".join(current_role.vocabulary["forbidden"]))
+                if current_role.vocabulary.get("high_frequency"):
+                    st.sidebar.write("**高频词**:")
+                    st.sidebar.write(", ".join(current_role.vocabulary["high_frequency"]))
+
+        st.sidebar.markdown("---")
 
     # 用户信息
     if "current_user" not in st.session_state:
@@ -191,6 +283,7 @@ def render_sidebar():
     st.sidebar.caption(f"🧠 Embedding: {embedding_display}")
     st.sidebar.caption(f"🔧 提取阈值: 每 3 轮")
     st.sidebar.caption(f"📊 最大记忆: 5 条")
+    st.sidebar.caption(f"🎭 当前角色: {selected_role_name}")
 
 
 # ==================== 主聊天界面 ====================
@@ -208,8 +301,15 @@ def render_chat():
     session = st.session_state.current_session
     components = st.session_state.components
 
-    # 显示会话信息
-    st.caption(f"📁 会话: {session.title} | 💬 消息数: {session.message_count}")
+    # 显示会话和角色信息
+    current_role_id = st.session_state.get("current_role_id", "companion_warm")
+    current_role = components["role_manager"].get_role(current_role_id)
+
+    if current_role:
+        role_emoji = "🧊" if current_role.emotional_tone.value == "cold" else "🌞"
+        st.caption(f"📁 会话: {session.title} | 💬 消息数: {session.message_count} | {role_emoji} 角色: {current_role.name}")
+    else:
+        st.caption(f"📁 会话: {session.title} | 💬 消息数: {session.message_count}")
 
     # 初始化消息历史
     if "messages" not in st.session_state:
@@ -231,13 +331,16 @@ def render_chat():
             with st.chat_message("user"):
                 st.markdown(prompt)
 
-        # 生成 AI 回复
+        # 生成 AI 回复（⭐ 使用当前角色）
+        current_role_id = st.session_state.get("current_role_id", "companion_warm")
+
         with st.spinner("🤖 AI 正在思考..."):
             try:
                 response = components["conversation_manager"].chat(
                     user_id=user.user_id,
                     session_id=session.session_id,
                     user_message=prompt,
+                    role_id=current_role_id,
                 )
 
                 # 显示 AI 回复
@@ -271,20 +374,45 @@ def render_memories():
 
     user = st.session_state.current_user
     session = st.session_state.current_session
+    components = st.session_state.components
 
-    # 显示会话信息
-    st.caption(f"📁 会话: {session.title}")
+    # 显示会话和角色信息
+    current_role_id = st.session_state.get("current_role_id", "companion_warm")
+    current_role = components["role_manager"].get_role(current_role_id)
 
-    # 获取记忆
+    col1, col2, col3 = st.columns([2, 2, 1])
+    with col1:
+        st.caption(f"📁 会话: {session.title}")
+    with col2:
+        if current_role:
+            st.caption(f"🎭 当前角色: {current_role.name}")
+    with col3:
+        # 添加清空记忆按钮
+        if st.button("🗑️ 清空记忆", key="clear_memories_btn"):
+            components["memory_storage"].delete_collection(
+                user_id=user.user_id,
+                session_id=session.session_id,
+                role_id=current_role_id
+            )
+            st.success("✅ 已清空当前角色的记忆")
+            st.rerun()
+
+    # 显示角色描述
+    if current_role:
+        st.info(f"📖 {current_role.description}")
+
+    st.markdown("---")
+
+    # 获取记忆（⭐ 使用当前角色的记忆）
     with st.spinner("📊 加载记忆..."):
-        memories = get_session_memories(user.user_id, session.session_id)
+        memories = get_session_memories(user.user_id, session.session_id, role_id=current_role_id)
 
     if not memories:
-        st.info("📭 当前会话还没有记忆")
+        st.info("📭 当前角色的记忆为空")
         return
 
     # 统计信息
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
 
     user_memories = [m for m in memories if m.get("speaker") == "user"]
     ai_memories = [m for m in memories if m.get("speaker") == "assistant"]
@@ -298,6 +426,9 @@ def render_memories():
         st.metric("AI 记忆", len(ai_memories))
     with col4:
         st.metric("高重要性", len(high_importance))
+    with col5:
+        role_emoji = "🧊" if current_role and current_role.emotional_tone.value == "cold" else "🌞"
+        st.metric("角色类型", role_emoji, help=f"{'冷酷理性' if current_role and current_role.emotional_tone.value == 'cold' else '温暖陪伴'}")
 
     st.markdown("---")
 

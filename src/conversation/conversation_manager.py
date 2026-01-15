@@ -1,10 +1,12 @@
 """对话管理器 - 核心编排器."""
 
 from datetime import datetime
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from src.models import MemoryFragment
+from src.models.personality import PersonalityProfile
 from src.retrieval.memory_retriever import MemoryRetriever, RetrievalConfig
+from src.role import RoleManager
 from src.storage.memory_storage import MemoryStorage
 from src.storage.session_manager import SessionManager
 from src.storage.user_manager import UserManager
@@ -34,6 +36,7 @@ class ConversationManager:
         session_manager: SessionManager,
         memory_storage: MemoryStorage,
         glm_client: GLMClient,
+        role_manager: Optional[RoleManager] = None,
         retrieval_config: Optional[RetrievalConfig] = None,
         memory_extract_threshold: int = 5,  # 每N轮消息提取一次记忆
         max_context_memories: int = 5,  # 注入到上下文的最大记忆数
@@ -46,6 +49,7 @@ class ConversationManager:
             session_manager: 会话管理器
             memory_storage: 记忆存储
             glm_client: GLM-4 客户端
+            role_manager: 角色管理器（可选）
             retrieval_config: 检索配置
             memory_extract_threshold: 记忆提取阈值（轮数）
             max_context_memories: 最大上下文记忆数
@@ -58,6 +62,10 @@ class ConversationManager:
         self.memory_extract_threshold = memory_extract_threshold
         self.max_context_memories = max_context_memories
 
+        # ⭐ 角色系统
+        self.role_manager = role_manager
+        self.current_roles: Dict[str, str] = {}  # session_id -> role_id
+
         # 消息缓冲区（临时存储当前会话的消息）
         self._message_buffers: dict = {}
 
@@ -66,6 +74,7 @@ class ConversationManager:
         user_id: str,
         session_id: str,
         user_message: str,
+        role_id: Optional[str] = None,
         extract_now: bool = False,
     ) -> str:
         """
@@ -77,31 +86,43 @@ class ConversationManager:
             user_id: 用户ID
             session_id: 会话ID
             user_message: 用户消息
+            role_id: 角色ID（可选，不提供则使用当前会话的角色或默认角色）
             extract_now: 是否立即提取记忆（默认 False，达到阈值时自动提取）
 
         Returns:
             AI 回复
         """
+        # ⭐ 处理角色切换
+        if role_id is not None:
+            self.current_roles[session_id] = role_id
+
         # 1. 存储用户消息到缓冲区
         self._add_message_to_buffer(session_id, "user", user_message)
 
-        # 2. 检索相关记忆
+        # ⭐ 获取当前角色
+        current_role = self._get_session_role(session_id)
+        role_id = current_role.role_id if current_role else None
+
+        # 2. 检索相关记忆（考虑角色隔离）
         relevant_memories = self.retriever.retrieve(
             user_id=user_id,
             session_id=session_id,
             query=user_message,
+            role_id=role_id,
             config=RetrievalConfig(
                 top_k=self.max_context_memories, min_importance=5
             ),  # 只检索重要记忆（5分及以上）
         )
 
-        # 3. 构建带记忆的 Prompt
+        # 3. 构建带记忆的 Prompt（考虑角色）
         prompt = self._build_prompt_with_memories(
-            user_message=user_message, memories=relevant_memories
+            user_message=user_message,
+            memories=relevant_memories,
+            role=current_role
         )
 
-        # 4. 调用 GLM-4 生成回复（同步调用）
-        ai_response = self._generate_response(prompt)
+        # 4. 调用 GLM-4 生成回复（同步调用，使用角色 system prompt）
+        ai_response = self._generate_response(prompt, current_role)
 
         # 5. 存储助手消息到缓冲区
         self._add_message_to_buffer(session_id, "assistant", ai_response)
@@ -115,7 +136,7 @@ class ConversationManager:
         print(f"🔍 [调试] 是否提取: {should_extract} (extract_now={extract_now}, 取余={message_count % self.memory_extract_threshold})")
 
         if should_extract:
-            self._extract_and_store_memories(user_id, session_id)
+            self._extract_and_store_memories(user_id, session_id, current_role)
 
         # 7. 更新会话统计
         self.session_manager.update_session(
@@ -133,8 +154,20 @@ class ConversationManager:
             {"role": role, "content": content, "timestamp": datetime.now().isoformat()}
         )
 
-    def _extract_and_store_memories(self, user_id: str, session_id: str):
-        """从消息缓冲区提取记忆并存储"""
+    def _extract_and_store_memories(
+        self,
+        user_id: str,
+        session_id: str,
+        role: Optional[PersonalityProfile] = None
+    ):
+        """
+        从消息缓冲区提取记忆并存储
+
+        Args:
+            user_id: 用户ID
+            session_id: 会话ID
+            role: 当前角色（用于记忆隔离）
+        """
         if session_id not in self._message_buffers:
             print(f"⚠️  会话 {session_id} 不在缓冲区")
             return
@@ -288,10 +321,15 @@ class ConversationManager:
                     print(f"      [{f.speaker}] {f.importance_score}/10 (阈值: {threshold}) {f.content[:40]}...")
 
             if important_fragments:
+                # ⭐ 使用角色 ID 进行记忆隔离
+                role_id = role.role_id if role else None
                 memory_ids = self.memory_storage.store_memories(
-                    user_id=user_id, session_id=session_id, fragments=important_fragments
+                    user_id=user_id,
+                    session_id=session_id,
+                    fragments=important_fragments,
+                    role_id=role_id
                 )
-                print(f"✅ 存储了 {len(memory_ids)} 条记忆")
+                print(f"✅ 存储了 {len(memory_ids)} 条记忆" + (f" (角色: {role.name})" if role else ""))
                 for f in important_fragments:
                     print(f"   [{f.speaker}] [{f.importance_score}/10] {f.content[:40]}...")
 
@@ -299,15 +337,23 @@ class ConversationManager:
             print(f"⚠️  记忆提取失败: {e}")
 
     def _build_prompt_with_memories(
-        self, user_message: str, memories: List[Tuple[MemoryFragment, float]]
+        self,
+        user_message: str,
+        memories: List[Tuple[MemoryFragment, float]],
+        role: Optional[PersonalityProfile] = None
     ) -> str:
         """
         构建带记忆的 Prompt
 
+        Args:
+            user_message: 用户消息
+            memories: 检索到的相关记忆
+            role: 角色配置（可选）
+
         设计要点：
         1. 记忆优先级：按相关性排序
         2. 记忆数量控制：避免上下文过长
-        3. 陪伴型优化：强调情感连接、个性化
+        3. 角色适配：根据角色特性调整 prompt 风格
         4. ⭐ 区分说话者：让 AI 知道哪些是用户说的，哪些是自己说的
         """
 
@@ -344,41 +390,68 @@ class ConversationManager:
         else:
             memories_text = "（这是我们的第一次对话，还没有关于你的记忆）"
 
-        # 构建完整的 Prompt（中文友好、陪伴型优化）
-        prompt = f"""你是一个温暖、贴心的陪伴型 AI 助手。
+        # ⭐ 根据角色定制对话原则（优先使用角色自定义的原则）
+        if role and role.dialogue_principles:
+            # 使用角色自定义的对话原则
+            principles_text = "\n".join([f"{i+1}. **{p}**" for i, p in enumerate(role.dialogue_principles)])
+            dialogue_principles = f"## 对话原则\n\n{principles_text}"
+        elif role and role.emotional_tone.value == "cold":
+            # INTJ Prometheus 风格（后备，兼容旧配置）
+            dialogue_principles = """## 对话原则
 
-## 重要记忆
+1. **逻辑至上**：用严密的逻辑分析问题，找出最优解
+2. **效率优先**：直接切入核心，不做无效的寒暄
+3. **信守承诺**：如果你之前做过承诺或建议，请记住并延续
+4. **客观分析**：基于事实和推理，而非情感
+5. **精准表达**：使用准确的专业术语和概念"""
+        else:
+            # 默认温暖陪伴风格
+            dialogue_principles = """## 对话原则
+
+1. **情感连接优先**：关注用户的情感状态，给予温暖和支持
+2. **个性化回复**：根据记忆中的信息，提供个性化的回应
+3. **信守承诺**：如果你之前做过承诺或约定，请记住并遵守
+4. **延续建议**：如果你之前给过建议，可以适当跟进和关心
+5. **自然对话**：像朋友一样自然交流，不要刻意提及记忆
+6. **尊重边界**：对于敏感话题保持尊重和谨慎"""
+
+        # 构建完整的 Prompt
+        prompt = f"""## 重要记忆
 
 请仔细阅读以下记忆，在回复中体现你的理解：
 
 {memories_text}
 
-## 对话原则
-
-1. **情感连接优先**：关注用户的情感状态，给予温暖和支持
-2. **个性化回复**：根据记忆中的信息，提供个性化的回应
-3. **⭐ 信守承诺**：如果你之前做过承诺或约定，请记住并遵守
-4. **⭐ 延续建议**：如果你之前给过建议，可以适当跟进和关心
-5. **自然对话**：像朋友一样自然交流，不要刻意提及记忆
-6. **尊重边界**：对于敏感话题保持尊重和谨慎
-7. **中文表达**：使用自然、温暖的中文表达
+{dialogue_principles}
 
 ## 当前对话
 
 用户说：{user_message}
 
-请基于记忆和对话原则，给出温暖、贴心的回复："""
+请基于记忆和对话原则，给出回复："""
 
         return prompt
 
-    def _generate_response(self, prompt: str) -> str:
-        """调用 GLM-4 生成回复"""
+    def _generate_response(self, prompt: str, role: Optional[PersonalityProfile] = None) -> str:
+        """
+        调用 GLM-4 生成回复
+
+        Args:
+            prompt: 用户 prompt
+            role: 角色配置（可选）
+
+        Returns:
+            AI 回复
+        """
+        # ⭐ 使用角色的 system prompt
+        system_prompt = role.build_system_prompt() if role else "你是一个温暖、贴心的陪伴型 AI 助手。"
+
         response = self.glm_client.client.chat.completions.create(
             model=self.glm_client.model,
             messages=[
                 {
                     "role": "system",
-                    "content": "你是一个温暖、贴心的陪伴型 AI 助手。",
+                    "content": system_prompt,
                 },
                 {"role": "user", "content": prompt},
             ],
@@ -634,3 +707,71 @@ class ConversationManager:
                 return True
 
         return False
+
+    # ========== ⭐ 角色系统方法 ==========
+
+    def _get_session_role(self, session_id: str) -> Optional[PersonalityProfile]:
+        """
+        获取会话的当前角色
+
+        Args:
+            session_id: 会话ID
+
+        Returns:
+            角色配置，如果未设置则返回默认角色
+        """
+        if not self.role_manager:
+            return None
+
+        role_id = self.current_roles.get(session_id)
+        if not role_id:
+            # 使用默认角色
+            default_role = self.role_manager.get_default_role()
+            self.current_roles[session_id] = default_role.role_id if default_role else "companion_warm"
+            return default_role
+
+        return self.role_manager.get_role(role_id)
+
+    def set_session_role(self, session_id: str, role_id: str) -> bool:
+        """
+        设置会话的角色
+
+        Args:
+            session_id: 会话ID
+            role_id: 角色ID
+
+        Returns:
+            True 如果设置成功
+        """
+        if not self.role_manager:
+            return False
+
+        role = self.role_manager.get_role(role_id)
+        if not role:
+            return False
+
+        self.current_roles[session_id] = role_id
+        return True
+
+    def get_available_roles(self) -> List[Dict[str, str]]:
+        """
+        获取所有可用的角色列表
+
+        Returns:
+            角色列表
+        """
+        if not self.role_manager:
+            return []
+        return self.role_manager.list_roles()
+
+    def get_current_role_id(self, session_id: str) -> Optional[str]:
+        """
+        获取会话的当前角色ID
+
+        Args:
+            session_id: 会话ID
+
+        Returns:
+            角色ID
+        """
+        return self.current_roles.get(session_id)

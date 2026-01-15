@@ -49,6 +49,7 @@ class MemoryRetriever:
         session_id: str,
         query: str,
         config: Optional[RetrievalConfig] = None,
+        role_id: Optional[str] = None,
     ) -> List[Tuple[MemoryFragment, float]]:
         """
         检索相关记忆
@@ -58,12 +59,13 @@ class MemoryRetriever:
             session_id: 会话ID
             query: 查询文本
             config: 检索配置（可选，覆盖默认配置）
+            role_id: 角色ID（可选，如果提供则只检索该角色的记忆）
 
         Returns:
             List of (MemoryFragment, relevance_score) 元组
         """
         config = config or self.config
-        collection = self.storage._get_or_create_collection(user_id, session_id)
+        collection = self.storage._get_or_create_collection(user_id, session_id, role_id)
 
         # 1. 语义检索
         results = collection.query(
