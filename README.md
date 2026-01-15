@@ -1,37 +1,86 @@
 # DeepMemory
 
-对话记忆提取与记忆驱动对话系统
+<div align="center">
+
+**对话记忆提取与记忆驱动对话系统**
+
+[![Python](https://img.shields.io/badge/Python-3.8%2B-blue)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104%2B-green)](https://fastapi.tiangolo.com/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+🧠 记住用户说的话 | 💬 生成个性化回复 | 🚀 开箱即用的 REST API
+
+</div>
+
+---
+
+## ⭐ 快速体验
+
+**使用 FastAPI 服务（推荐）**：
+
+```bash
+# 1. 安装依赖
+pip install -r requirements.txt
+
+# 2. 配置 API Key
+cp .env.example .env
+# 编辑 .env，填入 GLM_API_KEY
+
+# 3. 启动服务
+python app.py
+
+# 4. 访问 API 文档
+# http://localhost:8000/docs
+```
+
+**详细指南**: 📖 [FASTAPI_GUIDE.md](FASTAPI_GUIDE.md) - 从零开始的手把手教程
+
+---
 
 ## 概述
 
-DeepMemory 将原始聊天对话转换为结构化记忆对象，并自动进行重要性评分。**⭐ v0.3.0 新增**：基于向量检索的记忆驱动对话系统，实现个性化 AI 陪伴。
+DeepMemory 提供两种使用方式：
+
+### 1️⃣ FastAPI REST API 服务 ⭐ (推荐)
+
+- 🚀 **开箱即用**: 无需编写代码，直接启动服务
+- ⚡ **异步架构**: 立即响应用户请求，记忆提取在后台执行
+- 🔌 **REST API**: 标准 HTTP 接口，易于集成
+- 📊 **完整功能**: 对话、记忆、用户管理一应俱全
+- 📖 **交互式文档**: Swagger UI 自动生成
+
+**适用场景**: Web 应用、移动应用、第三方集成
+
+### 2️⃣ Python 库
+
+- 🐍 **编程接口**: 灵活集成到现有项目
+- 🔧 **完全可控**: 自定义配置和流程
+- 📦 **模块化设计**: 按需使用组件
+
+**适用场景**: 深度定制、批量处理、研究开发
+
+---
 
 ## 功能特性
 
 ### 记忆提取
 - **结构化记忆提取**: 将纯文本对话转换为 JSON 格式的记忆片段
 - **自动重要性评分**: 基于多维度的评分系统（1-10分）
-  - 情感强度
-  - 信息密度（实体、主题）
-  - 任务/目标相关性
-- **⭐ GLM-4 支持**: 原生支持智谱AI的 GLM-4 模型，采用陪伴型评分
-  - 情感强度 (0-3分)
-  - 个性化程度 (0-3分)
-  - 亲密度/关系 (0-2分)
-  - 偏好明确性 (0-2分)
+- **⭐ GLM-4 支持**: 原生支持智谱AI的 GLM-4 模型
+- **双向记忆**: 同时记住用户的话和 AI 的承诺
 
-### ⭐ 记忆驱动对话系统 (v0.3.0 新增)
+### 记忆驱动对话
 - **ChromaDB 向量存储**: 持久化存储记忆，支持语义检索
 - **语义相似度检索**: 基于向量相似度智能召回相关记忆
 - **混合排序策略**: 相似度 + 重要性 + 时间衰减
 - **对话管理器**: 自动提取记忆、检索相关记忆、生成个性化回复
 - **多用户/会话支持**: 用户隔离、会话管理
-- **上下文节约**: 只检索和注入最相关的记忆，避免上下文过长
 
 ### 技术特性
-- **Pydantic 模型**: 类型安全的数据结构，带验证功能
-- **LLM 驱动**: 使用 OpenAI API 或 GLM-4 进行智能提取
-- **启发式回退**: 在没有 LLM 时使用基于规则的提取
+- **异步处理**: FastAPI 异步架构，高并发支持
+- **Pydantic 模型**: 类型安全的数据结构
+- **LLM 驱动**: 使用 GLM-4 进行智能提取
+- **OpenAI 兼容**: 支持标准 chat completions 格式
 
 ## 安装
 
@@ -276,11 +325,23 @@ pipeline = MemoryPipeline(
 
 ## 文档
 
-- `USER_GUIDE_CN.md` - 完整中文用户指南
-- `CLAUDE.md` - AI 助手项目指南
-- `test_results/TESTING_SUMMARY.md` - 测试结果摘要
+- 📖 **[FASTAPI_GUIDE.md](FASTAPI_GUIDE.md)** - FastAPI 完全使用指南（小白友好）
+- 📚 **[API.md](API.md)** - REST API 完整文档
+- 🔧 **[CLAUDE.md](CLAUDE.md)** - AI 助手项目指南
 
 ## 更新日志
+
+### v0.4.0 (2026-01-15) - FastAPI REST API 服务
+- ⭐ **新增 FastAPI REST API 服务**
+  - 开箱即用的 Web 服务
+  - 异步架构，立即响应用户请求
+  - 完整的 REST API 接口（对话、记忆、用户管理）
+  - OpenAI 兼容的 chat completions 接口
+  - 交互式 API 文档（Swagger UI）
+- ⭐ 新增依赖注入系统（单例模式）
+- ⭐ 新增后台异步记忆提取
+- ⭐ 生产环境强制使用 GLM Embedding-3
+- 📝 新增详细的使用文档（FASTAPI_GUIDE.md）
 
 ### v0.3.0 (2026-01-14)
 - ⭐ **新增记忆驱动对话系统**

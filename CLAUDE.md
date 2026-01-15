@@ -4,28 +4,88 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-DeepMemory 是一个 Python 库，用于从纯文本对话中提取结构化的记忆片段，并实现**记忆驱动的对话系统**。它使用 LLM 驱动的提取（OpenAI API/智谱AI GLM-4）和启发式回退，将对话转换为 JSON 格式的记忆并自动进行重要性评分。
+DeepMemory 是一个**记忆驱动的对话系统**，提供两种使用方式：
 
-**⭐ v0.3.0 新增**: 记忆驱动对话系统（ChromaDB 向量存储 + 语义检索）
-**⭐ v0.2.0**: 陪伴型 AI 评分系统（GLM-4）
-**⭐ v0.3.1**: AI 承诺和回复记忆功能（speaker 字段 + AI 评分标准）
+1. **FastAPI REST API 服务** ⭐ (v0.4.0 新增，推荐)
+   - 开箱即用的 Web 服务
+   - 异步架构，立即响应用户请求
+   - 完整的 REST API 接口
+   - 适合生产环境部署
+   - 详细文档: [FASTAPI_GUIDE.md](FASTAPI_GUIDE.md)
 
-## 开发命令
+2. **Python 库** (传统方式)
+   - 从纯文本对话中提取结构化的记忆片段
+   - 使用 LLM 驱动的提取（OpenAI API/智谱AI GLM-4）和启发式回退
+   - 将对话转换为 JSON 格式的记忆并自动进行重要性评分
+   - 适合集成到现有项目
 
-### 安装依赖
+### 核心特性
+
+- 🧠 **自动记忆提取**: 从对话中自动识别并存储重要信息
+- 💬 **记忆驱动对话**: 基于历史记忆生成个性化回复
+- 🔄 **双向记忆**: 同时记住用户的话和 AI 的承诺
+- 📊 **智能评分**: 自动评估信息重要性（1-10分）
+- 🚀 **REST API**: 标准的 HTTP 接口，易于集成
+
+### 版本历史
+
+- **v0.4.0**: FastAPI REST API 服务（异步架构）
+- **v0.3.1**: AI 承诺和回复记忆功能（speaker 字段 + AI 评分标准）
+- **v0.3.0**: 记忆驱动对话系统（ChromaDB 向量存储 + 语义检索）
+- **v0.2.0**: 陪伴型 AI 评分系统（GLM-4）
+
+---
+
+## 快速开始
+
+### 方式一：使用 FastAPI 服务（推荐）⭐
+
+**1. 安装依赖**
 ```bash
 pip install -r requirements.txt
 ```
 
-### 运行测试
+**2. 配置环境变量**
+```bash
+cp .env.example .env
+# 编辑 .env 文件，填入 GLM_API_KEY
+```
+
+**3. 启动服务**
+```bash
+# 使用启动脚本
+./start.sh
+
+# 或直接运行
+python app.py
+```
+
+**4. 访问服务**
+- API 文档: http://localhost:8000/docs
+- 健康检查: http://localhost:8000/health
+
+**5. 测试 API**
+```bash
+python test_api.py
+```
+
+详细文档: [FASTAPI_GUIDE.md](FASTAPI_GUIDE.md)
+
+### 方式二：使用 Python 库
+
+#### 安装依赖
+```bash
+pip install -r requirements.txt
+```
+
+#### 运行测试
 - 运行所有测试: `pytest tests/ -v`
 - 运行特定测试文件:
   - `pytest tests/test_models.py -v`
   - `pytest tests/test_scorers.py -v`
   - `pytest tests/test_pipeline.py -v`
-- 运行测试并查看覆盖率: `pytest tests/ --cov=src -v`
 
-### 快速验证
+#### 快速验证
 ```bash
 # ⭐ 记忆驱动对话系统（推荐）
 python demo_interactive_chat.py
@@ -35,15 +95,6 @@ python test_speaker_feature.py
 
 # ⭐ 真实场景完整测试
 python test_real_conversation_full.py
-
-# 记忆系统测试
-python test_memory_system.py
-
-# 陪伴型演示
-python demo_companion_memory.py
-
-# 或使用真实场景测试
-python test_real_conversations.py
 ```
 
 ### 使用示例

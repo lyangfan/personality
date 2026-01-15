@@ -193,6 +193,7 @@ class MemoryStorage:
 
         # 准备元数据
         metadata = {
+            "speaker": fragment.speaker,
             "importance_score": fragment.importance_score,
             "type": fragment.type,
             "sentiment": fragment.sentiment,
@@ -220,6 +221,7 @@ class MemoryStorage:
         documents = [f.content for f in fragments]
         metadatas = [
             {
+                "speaker": f.speaker,
                 "importance_score": f.importance_score,
                 "type": f.type,
                 "sentiment": f.sentiment,
@@ -239,6 +241,55 @@ class MemoryStorage:
         """获取记忆数量"""
         collection = self._get_or_create_collection(user_id, session_id)
         return collection.count()
+
+    def query_memories(
+        self,
+        user_id: str,
+        session_id: str,
+        n_results: int = 10,
+        where: Optional[Dict] = None,
+    ) -> List[Dict]:
+        """
+        查询记忆片段
+
+        Args:
+            user_id: 用户ID
+            session_id: 会话ID
+            n_results: 返回结果数量
+            where: 过滤条件（ChromaDB where 子句）
+
+        Returns:
+            记忆片段列表（包含所有元数据）
+        """
+        collection = self._get_or_create_collection(user_id, session_id)
+
+        # 获取所有记忆（不使用向量查询）
+        results = collection.get(
+            limit=n_results,
+            where=where,
+            include=["documents", "metadatas"],
+        )
+
+        # 格式化结果
+        memories = []
+        for i, doc in enumerate(results.get("documents", [])):
+            metadata = results.get("metadatas", [])[i] if i < len(results.get("metadatas", [])) else {}
+
+            # 重建 MemoryFragment 所需的字段
+            memory = {
+                "content": doc,
+                "timestamp": metadata.get("timestamp"),
+                "type": metadata.get("type"),
+                "sentiment": metadata.get("sentiment"),
+                "importance_score": metadata.get("importance_score", 5),
+                "confidence": metadata.get("confidence", 0.5),
+                "entities": metadata.get("entities", "").split(",") if metadata.get("entities") else [],
+                "topics": metadata.get("topics", "").split(",") if metadata.get("topics") else [],
+                "speaker": metadata.get("speaker", "user"),
+            }
+            memories.append(memory)
+
+        return memories
 
     def delete_collection(self, user_id: str, session_id: str):
         """删除会话的所有记忆"""
