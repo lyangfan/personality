@@ -69,7 +69,9 @@ class ConversationManager:
         extract_now: bool = False,
     ) -> str:
         """
-        处理用户消息并生成回复
+        处理用户消息并生成回复（同步方法）
+
+        注意：此方法是同步的，在异步路由中应使用 loop.run_in_executor() 调用
 
         Args:
             user_id: 用户ID
@@ -98,7 +100,7 @@ class ConversationManager:
             user_message=user_message, memories=relevant_memories
         )
 
-        # 4. 调用 GLM-4 生成回复
+        # 4. 调用 GLM-4 生成回复（同步调用）
         ai_response = self._generate_response(prompt)
 
         # 5. 存储助手消息到缓冲区

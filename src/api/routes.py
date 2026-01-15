@@ -112,12 +112,15 @@ async def chat(
                 title="新对话",
             )
 
-        # 立即生成回复（同步操作）
-        response = conversation_manager.chat(
-            user_id=user.user_id,
-            session_id=session.session_id,
-            user_message=request.message,
-            extract_now=request.extract_now,
+        # ⚡ 真正的异步：在线程池中执行同步操作，避免阻塞事件循环
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            None,  # 使用默认的 ThreadPoolExecutor
+            conversation_manager.chat,
+            user.user_id,
+            session.session_id,
+            request.message,
+            request.extract_now,
         )
 
         # 在后台异步提取记忆（不阻塞响应）
@@ -194,12 +197,15 @@ async def chat_completions(
                 title="新对话",
             )
 
-        # 立即生成回复
-        response_text = conversation_manager.chat(
-            user_id=user.user_id,
-            session_id=session.session_id,
-            user_message=user_message,
-            extract_now=False,
+        # ⚡ 真正的异步：在线程池中执行同步操作，避免阻塞事件循环
+        loop = asyncio.get_event_loop()
+        response_text = await loop.run_in_executor(
+            None,  # 使用默认的 ThreadPoolExecutor
+            conversation_manager.chat,
+            user.user_id,
+            session.session_id,
+            user_message,
+            False,  # extract_now
         )
 
         # 在后台异步提取记忆（不阻塞响应）
