@@ -3,13 +3,15 @@ FastAPI 路由定义
 
 实现异步架构：
 - /chat 立即响应用户请求
+- /v1/chat/stream 流式输出，实时显示 AI 回复
 - 记忆提取作为后台任务执行，不阻塞主线程
 """
 import time
 import asyncio
-from typing import List, Optional
+import json
+from typing import List, Optional, AsyncGenerator
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Depends, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from src.api.models import (
     ChatRequest,
@@ -147,6 +149,106 @@ async def chat(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"对话处理失败: {str(e)}",
+        )
+
+
+@router.post("/v1/chat/stream", tags=["Chat"])
+async def chat_stream(
+    request: ChatRequest,
+    conversation_manager: ConversationManager = Depends(get_conversation_manager),
+    user_manager: UserManager = Depends(get_user_manager),
+    session_manager: SessionManager = Depends(get_session_manager),
+    authenticated: bool = Depends(verify_api_key),
+):
+    """
+    流式对话接口（⭐ 推荐）
+
+    实时流式输出 AI 回复，逐字显示，提升用户体验：
+    - 收到一个字就显示一个字
+    - 减少"等待焦虑"，增加"在场感"
+    - 记忆提取在生成完整回复后执行
+
+    返回格式：Server-Sent Events (SSE)
+    每个事件包含：
+    - data: {"content": "文本块", "done": false}
+    - 结束时: data: {"done": true, "session_id": "...", "message_count": N}
+
+    需要认证：在请求头中提供 X-API-Key
+    """
+    try:
+        # 确保用户存在
+        user = user_manager.get_or_create_user(
+            username=request.username or f"user_{request.user_id}",
+            user_id=request.user_id,
+        )
+
+        # 确保会话存在
+        session = None
+        if request.session_id:
+            session = session_manager.get_session(request.session_id)
+
+        if not session:
+            session = session_manager.create_session(
+                user_id=user.user_id,
+                title="新对话",
+            )
+
+        # ⭐ 流式生成函数
+        async def generate_stream() -> AsyncGenerator[str, None]:
+            """生成 SSE 流式响应"""
+            try:
+                # 在线程池中执行流式生成
+                loop = asyncio.get_event_loop()
+
+                # 使用 chat_stream 方法
+                def stream_generator():
+                    return conversation_manager.chat_stream(
+                        user.user_id,
+                        session.session_id,
+                        request.message,
+                        request.role_id,
+                        request.extract_now,
+                    )
+
+                # 在线程池中运行生成器
+                gen = await loop.run_in_executor(None, stream_generator)
+
+                # 逐块 yield
+                for chunk in gen:
+                    # 转义换行符（SSE 格式）
+                    chunk_escaped = chunk.replace("\n", "\\n")
+                    data = json.dumps({"content": chunk, "done": False}, ensure_ascii=False)
+                    yield f"data: {data}\n\n"
+
+                # 发送结束信号
+                session = session_manager.get_session(session.session_id)
+                end_data = json.dumps({
+                    "done": True,
+                    "session_id": session.session_id,
+                    "message_count": session.message_count,
+                }, ensure_ascii=False)
+                yield f"data: {end_data}\n\n"
+
+            except Exception as e:
+                # 发送错误信息
+                error_data = json.dumps({"error": str(e), "done": True}, ensure_ascii=False)
+                yield f"data: {error_data}\n\n"
+
+        # 返回 SSE 流式响应
+        return StreamingResponse(
+            generate_stream(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",  # 禁用 Nginx 缓冲
+            },
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"流式对话处理失败: {str(e)}",
         )
 
 

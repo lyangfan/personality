@@ -1,7 +1,7 @@
 """对话管理器 - 核心编排器."""
 
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Generator, List, Optional, Tuple
 
 from src.models import MemoryFragment
 from src.models.personality import PersonalityProfile
@@ -121,8 +121,8 @@ class ConversationManager:
             role=current_role
         )
 
-        # 4. 调用 GLM-4 生成回复（同步调用，使用角色 system prompt）
-        ai_response = self._generate_response(prompt, current_role)
+        # 4. 调用 GLM-4 生成回复（同步调用，使用角色 system prompt 和短期对话历史）
+        ai_response = self._generate_response(prompt, current_role, session_id)
 
         # 5. 存储助手消息到缓冲区
         self._add_message_to_buffer(session_id, "assistant", ai_response)
@@ -432,13 +432,19 @@ class ConversationManager:
 
         return prompt
 
-    def _generate_response(self, prompt: str, role: Optional[PersonalityProfile] = None) -> str:
+    def _generate_response(
+        self,
+        prompt: str,
+        role: Optional[PersonalityProfile] = None,
+        session_id: Optional[str] = None,
+    ) -> str:
         """
         调用 GLM-4 生成回复
 
         Args:
-            prompt: 用户 prompt
+            prompt: 用户 prompt（包含记忆和当前消息）
             role: 角色配置（可选）
+            session_id: 会话ID（用于获取短期对话历史）
 
         Returns:
             AI 回复
@@ -446,15 +452,38 @@ class ConversationManager:
         # ⭐ 使用角色的 system prompt
         system_prompt = role.build_system_prompt() if role else "你是一个温暖、贴心的陪伴型 AI 助手。"
 
+        # 构建消息列表
+        messages = [
+            {
+                "role": "system",
+                "content": system_prompt,
+            }
+        ]
+
+        # ⭐ 注入短期对话历史（Short-term Memory）
+        # 从 _message_buffers 获取最近的对话，但排除刚添加的当前用户消息
+        # 因为当前消息已经通过 prompt 参数传入
+        if session_id and session_id in self._message_buffers:
+            buffer = self._message_buffers[session_id]
+            # 获取最近的 N 条消息（不包括最后一条，因为那是当前用户消息）
+            # 保留最近的 10 条消息（5轮对话），避免上下文过长
+            recent_messages = buffer[-11:-1] if len(buffer) > 1 else []
+
+            # 将历史消息添加到 messages 列表
+            for msg in recent_messages:
+                messages.append({
+                    "role": msg["role"],
+                    "content": msg["content"]
+                })
+
+            print(f"📝 [调试] 注入 {len(recent_messages)} 条历史消息到上下文")
+
+        # 添加当前用户消息
+        messages.append({"role": "user", "content": prompt})
+
         response = self.glm_client.client.chat.completions.create(
             model=self.glm_client.model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": system_prompt,
-                },
-                {"role": "user", "content": prompt},
-            ],
+            messages=messages,
             temperature=0.8,  # 稍高的温度，增加对话多样性
         )
 
@@ -514,7 +543,12 @@ class ConversationManager:
         Returns:
             True 如果是第一人称陈述
         """
-        # 第一人称标记
+        # ⭐ 首先去掉动作描写（如果有）
+        # 动作描写格式：*动作内容*
+        import re
+        content_clean = re.sub(r'\*[^*]+\*', '', content).strip()
+
+        # 第一人称标记（更宽松的检测）
         first_person_indicators = [
             "我喜欢",
             "我爱",
@@ -533,11 +567,25 @@ class ConversationManager:
             "我的工作",
             "我的梦想",
             "我的职业",
+            # ⭐ 新增：更通用的第一人称模式
+            "我忘不了",
+            "我记得",
+            "我想要",
+            "我需要",
+            "我希望",
+            "我不知道",
+            "我不",
+            "我没",
+            "我不能",
         ]
 
         for indicator in first_person_indicators:
             if indicator in content:
                 return True
+
+        # ⭐ 额外检查：如果句子以"我"开头，且长度>5，很可能是第一人称陈述
+        if content_clean.startswith("我") and len(content_clean) > 5:
+            return True
 
         return False
 
@@ -551,28 +599,35 @@ class ConversationManager:
         Returns:
             True 如果是问题
         """
-        # 问句标记
-        question_indicators = [
-            "吗",
-            "呢",
-            "？",
-            "?",
-            "你知道",
-            "你知道吗",
-            "是什么",
+        # ⭐ 首先去掉动作描写（如果有）
+        # 动作描写格式：*动作内容*
+        import re
+        content_clean = re.sub(r'\*[^*]+\*', '', content).strip()
+
+        # ⭐ 更可靠的问题检测：
+        # 1. 以问号结尾（最可靠）
+        if content_clean.endswith("？") or content_clean.endswith("?"):
+            return True
+
+        # 2. 明确的疑问词开头（需要谨慎，避免误判）
+        question_starters = [
             "为什么",
             "怎么",
             "如何",
-            "哪个",
-            "哪些",
-            "多少",
+            "是否",
             "有没有",
             "是不是",
+            "你知道吗",
+            "什么是",
         ]
 
-        for indicator in question_indicators:
-            if indicator in content:
+        for starter in question_starters:
+            if content_clean.startswith(starter):
                 return True
+
+        # ⭐ 不再单独检查"吗"、"呢"等字，因为陈述句中也可能包含
+        # 例如："你愿意和我分享更多吗？" 这虽然是问题，但对于 AI 来说可能是有价值的陈述
+        # 我们只在句子以问号结尾时才判定为问题
 
         return False
 
@@ -775,3 +830,103 @@ class ConversationManager:
             角色ID
         """
         return self.current_roles.get(session_id)
+
+    # ========== ⭐ 流式输出方法 ==========
+
+    def chat_stream(
+        self,
+        user_id: str,
+        session_id: str,
+        user_message: str,
+        role_id: Optional[str] = None,
+        extract_now: bool = False,
+    ) -> Generator[str, None, None]:
+        """
+        流式处理用户消息并生成回复（用于实时对话体验）
+
+        与 chat() 方法的区别：
+        - 使用生成器逐块 yield 文本，而不是等待完整响应
+        - 用户可以实时看到 AI 的回复过程，减少等待焦虑
+        - 记忆提取仍在后台完整执行
+
+        Args:
+            user_id: 用户ID
+            session_id: 会话ID
+            user_message: 用户消息
+            role_id: 角色ID（可选）
+            extract_now: 是否立即提取记忆
+
+        Yields:
+            str: AI 回复的文本块
+        """
+        # ⭐ 处理角色切换
+        if role_id is not None:
+            self.current_roles[session_id] = role_id
+
+        # 1. 存储用户消息到缓冲区
+        self._add_message_to_buffer(session_id, "user", user_message)
+
+        # ⭐ 获取当前角色
+        current_role = self._get_session_role(session_id)
+        role_id = current_role.role_id if current_role else None
+
+        # 2. 检索相关记忆
+        relevant_memories = self.retriever.retrieve(
+            user_id=user_id,
+            session_id=session_id,
+            query=user_message,
+            role_id=role_id,
+            config=RetrievalConfig(
+                top_k=self.max_context_memories, min_importance=5
+            ),
+        )
+
+        # 3. 构建 Prompt
+        prompt = self._build_prompt_with_memories(
+            user_message=user_message,
+            memories=relevant_memories,
+            role=current_role
+        )
+
+        # 4. 构建消息列表（用于流式生成）
+        system_prompt = current_role.build_system_prompt() if current_role else "你是一个温暖、贴心的陪伴型 AI 助手。"
+        messages = [{"role": "system", "content": system_prompt}]
+
+        # 注入短期对话历史
+        if session_id in self._message_buffers:
+            buffer = self._message_buffers[session_id]
+            recent_messages = buffer[-11:-1] if len(buffer) > 1 else []
+            for msg in recent_messages:
+                messages.append({"role": msg["role"], "content": msg["content"]})
+
+        # 添加当前用户消息
+        messages.append({"role": "user", "content": prompt})
+
+        # 5. 流式生成回复（使用 GLMClient.chat_stream）
+        full_response = ""
+        try:
+            for chunk in self.glm_client.chat_stream(
+                messages=messages,
+                temperature=0.8,
+            ):
+                full_response += chunk
+                yield chunk
+
+        except Exception as e:
+            yield f"\n\n[错误: {str(e)}]"
+            full_response = str(e)
+
+        # 6. 存储完整回复到缓冲区
+        self._add_message_to_buffer(session_id, "assistant", full_response)
+
+        # 7. 检查是否需要提取记忆
+        message_count = len(self._message_buffers.get(session_id, []))
+        should_extract = extract_now or (message_count % self.memory_extract_threshold == 0)
+
+        if should_extract:
+            self._extract_and_store_memories(user_id, session_id, current_role)
+
+        # 8. 更新会话统计
+        self.session_manager.update_session(
+            session_id, message_count=message_count
+        )

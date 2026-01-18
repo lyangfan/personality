@@ -71,3 +71,10 @@ data/chromadb/
 
 # Test outputs
 test_results/output/
+
+# Temporary test files
+test_action_streaming.py
+test_*.py
+!test_api.py
+!test_role_system.py
+!test_all_roles.py

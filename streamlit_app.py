@@ -331,34 +331,43 @@ def render_chat():
             with st.chat_message("user"):
                 st.markdown(prompt)
 
-        # 生成 AI 回复（⭐ 使用当前角色）
+        # ⭐ 流式生成 AI 回复（使用当前角色）
         current_role_id = st.session_state.get("current_role_id", "companion_warm")
 
-        with st.spinner("🤖 AI 正在思考..."):
-            try:
-                response = components["conversation_manager"].chat(
-                    user_id=user.user_id,
-                    session_id=session.session_id,
-                    user_message=prompt,
-                    role_id=current_role_id,
-                )
+        try:
+            # 创建 AI 消息占位符
+            with chat_container:
+                with st.chat_message("assistant"):
+                    # 使用 st.write_stream 实时显示流式输出
+                    response_container = st.empty()
+                    full_response = ""
 
-                # 显示 AI 回复
-                st.session_state.messages.append({"role": "assistant", "content": response})
-                with chat_container:
-                    with st.chat_message("assistant"):
-                        st.markdown(response)
+                    # 逐块显示
+                    for chunk in components["conversation_manager"].chat_stream(
+                        user_id=user.user_id,
+                        session_id=session.session_id,
+                        user_message=prompt,
+                        role_id=current_role_id,
+                    ):
+                        full_response += chunk
+                        response_container.markdown(full_response + "▌")  # 添加光标效果
 
-                # 更新会话信息
-                session = components["session_manager"].get_session(session.session_id)
-                st.session_state.current_session = session
+                    # 移除光标，显示最终回复
+                    response_container.markdown(full_response)
 
-                # 显示记忆提取提示
-                if session.message_count % 3 == 0:
-                    st.success("✅ 已自动提取记忆")
+            # 保存完整回复到历史
+            st.session_state.messages.append({"role": "assistant", "content": full_response})
 
-            except Exception as e:
-                st.error(f"❌ 发生错误: {str(e)}")
+            # 更新会话信息
+            session = components["session_manager"].get_session(session.session_id)
+            st.session_state.current_session = session
+
+            # 显示记忆提取提示
+            if session.message_count % 3 == 0:
+                st.success("✅ 已自动提取记忆")
+
+        except Exception as e:
+            st.error(f"❌ 发生错误: {str(e)}")
 
 
 # ==================== 记忆展示界面 ====================

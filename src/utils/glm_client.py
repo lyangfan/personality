@@ -3,7 +3,7 @@
 import json
 import os
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Generator, List, Optional
 
 from openai import OpenAI
 
@@ -681,3 +681,46 @@ Assistant 基础规则:
             return float(data.get("relevance", 0.5))
         except (json.JSONDecodeError, ValueError):
             return 0.5
+
+    def chat_stream(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: float = 0.8,
+        max_tokens: int = 1000,
+        **kwargs
+    ) -> Generator[str, None, None]:
+        """
+        流式生成对话回复（用于实时对话体验）
+
+        Args:
+            messages: 聊天消息列表
+            temperature: 采样温度
+            max_tokens: 最大 token 数
+            **kwargs: 其他参数
+
+        Yields:
+            str: 每次生成的一个文本块
+        """
+        request_params = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "stream": True,  # ⭐ 启用流式输出
+        }
+
+        # 添加其他参数
+        request_params.update(kwargs)
+
+        try:
+            # 创建流式响应
+            stream = self.client.chat.completions.create(**request_params)
+
+            # 逐块 yield 文本
+            for chunk in stream:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    yield chunk.choices[0].delta.content
+
+        except Exception as e:
+            # 发生错误时 yield 错误信息
+            yield f"\n\n[错误: {str(e)}]"
